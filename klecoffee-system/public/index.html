@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KleCoffee | Sistema</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="toast" class="toast hidden"></div>
+
+  <section id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div>
+        <span class="badge">KleCoffee</span>
+        <h1>Sistema de gestão</h1>
+        <p>Login para acessar dashboard, máquinas, clientes, eventos, estoque e pagamentos.</p>
+      </div>
+      <form id="loginForm" class="grid-form compact-form">
+        <input type="email" name="email" placeholder="Email" value="admin@klecoffee.com" required />
+        <input type="password" name="password" placeholder="Senha" value="admin123" required />
+        <button type="submit" class="btn primary">Entrar</button>
+      </form>
+      <small>Primeiro acesso: admin@klecoffee.com / admin123</small>
+    </div>
+  </section>
+
+  <section id="appScreen" class="app hidden">
+    <aside class="sidebar">
+      <div>
+        <span class="badge">KleCoffee</span>
+        <h2>Painel</h2>
+        <p id="userLabel" class="muted"></p>
+      </div>
+      <nav class="menu">
+        <button class="menu-link active" data-tab="dashboard">Dashboard</button>
+        <button class="menu-link" data-tab="machines">Máquinas</button>
+        <button class="menu-link" data-tab="clients">Clientes</button>
+        <button class="menu-link" data-tab="events">Eventos</button>
+        <button class="menu-link" data-tab="products">Estoque</button>
+        <button class="menu-link" data-tab="payments">Pagamentos</button>
+      </nav>
+      <button id="logoutBtn" class="btn secondary full">Sair</button>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h1 id="tabTitle">Dashboard</h1>
+          <p class="muted">Controle de clientes, eventos, estoque e pagamentos.</p>
+        </div>
+      </header>
+
+      <section class="tab-section active" id="dashboard">
+        <div class="cards-grid">
+          <article class="card stat-card"><span>Máquinas</span><strong id="totalMachines">0</strong></article>
+          <article class="card stat-card"><span>Clientes fixos</span><strong id="totalClients">0</strong></article>
+          <article class="card stat-card"><span>Eventos</span><strong id="totalEvents">0</strong></article>
+          <article class="card stat-card"><span>Faturamento</span><strong id="totalRevenue">R$ 0,00</strong></article>
+        </div>
+        <div class="two-col">
+          <article class="card">
+            <div class="card-header"><h3>Alertas de manutenção</h3></div>
+            <div id="maintenanceList" class="list-block"></div>
+          </article>
+          <article class="card">
+            <div class="card-header"><h3>Estoque baixo</h3></div>
+            <div id="lowStockList" class="list-block"></div>
+          </article>
+        </div>
+        <article class="card">
+          <div class="card-header"><h3>Pagamentos recentes</h3></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Cliente</th><th>Tipo</th><th>Valor</th><th>Método</th></tr></thead>
+              <tbody id="recentPaymentsBody"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="tab-section" id="machines">
+        <div class="panel-grid">
+          <article class="card form-card">
+            <div class="card-header"><h3>Cadastrar máquina</h3></div>
+            <form id="machineForm" class="grid-form" enctype="multipart/form-data">
+              <input type="file" name="photo" accept="image/*" />
+              <input type="text" name="serial_number" placeholder="Número de série" required />
+              <input type="number" step="0.01" name="value" placeholder="Valor" required />
+              <input type="text" name="model" placeholder="Modelo" required />
+              <input type="text" name="brand" placeholder="Marca" required />
+              <select name="status">
+                <option value="disponivel">Disponível</option>
+                <option value="em_uso">Em uso</option>
+                <option value="manutencao">Manutenção</option>
+                <option value="inativa">Inativa</option>
+              </select>
+              <label>Última manutenção<input type="date" name="last_maintenance" /></label>
+              <label>Próxima manutenção<input type="date" name="next_maintenance" /></label>
+              <textarea name="notes" placeholder="Observações"></textarea>
+              <button class="btn primary" type="submit">Salvar máquina</button>
+            </form>
+          </article>
+          <article class="card">
+            <div class="card-header"><h3>Máquinas cadastradas</h3></div>
+            <div id="machinesList" class="cards-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="tab-section" id="clients">
+        <div class="panel-grid">
+          <article class="card form-card">
+            <div class="card-header"><h3>Cadastrar cliente</h3></div>
+            <form id="clientForm" class="grid-form">
+              <input type="text" name="corporate_name" placeholder="Razão Social" required />
+              <input type="text" name="cnpj" placeholder="CNPJ" />
+              <input type="text" name="contact_name" placeholder="Nome do responsável" required />
+              <input type="text" name="cpf" placeholder="CPF" />
+              <input type="text" name="phone" placeholder="Contato" />
+              <input type="email" name="email" placeholder="Email" />
+              <textarea name="address" placeholder="Endereço"></textarea>
+              <label>Data do pagamento<input type="date" name="payment_day" /></label>
+              <input type="number" step="0.01" name="monthly_fee" placeholder="Valor da mensalidade" />
+              <select name="machine_id" id="clientMachineSelect"><option value="">Máquina disponível</option></select>
+              <select name="client_type" id="clientTypeSelect">
+                <option value="fixo">Cliente fixo</option>
+                <option value="evento">Evento</option>
+              </select>
+              <select name="status">
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+              <button class="btn primary" type="submit">Salvar cliente</button>
+            </form>
+          </article>
+          <article class="card">
+            <div class="card-header"><h3>Clientes cadastrados</h3></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Razão Social</th><th>Responsável</th><th>Tipo</th><th>Máquina</th><th>Mensalidade</th></tr></thead>
+                <tbody id="clientsBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="tab-section" id="events">
+        <div class="panel-grid">
+          <article class="card form-card">
+            <div class="card-header"><h3>Cadastrar evento</h3></div>
+            <form id="eventForm" class="grid-form">
+              <select name="client_id" id="eventClientSelect" required><option value="">Selecione o cliente</option></select>
+              <input type="text" name="title" placeholder="Nome do evento" required />
+              <input type="text" name="location" placeholder="Local" />
+              <label>Data inicial<input type="date" name="start_date" required /></label>
+              <label>Data final<input type="date" name="end_date" /></label>
+              <input type="number" name="guests_count" placeholder="Número de convidados" />
+              <input type="number" step="0.01" name="estimated_value" placeholder="Valor estimado" />
+              <select name="machine_id" id="eventMachineSelect"><option value="">Máquina</option></select>
+              <select name="status">
+                <option value="orcamento">Orçamento</option>
+                <option value="confirmado">Confirmado</option>
+                <option value="finalizado">Finalizado</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+              <textarea name="supplies_notes" placeholder="Insumos e observações"></textarea>
+              <button class="btn primary" type="submit">Salvar evento</button>
+            </form>
+          </article>
+          <article class="card">
+            <div class="card-header"><h3>Eventos</h3></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Evento</th><th>Cliente</th><th>Data</th><th>Local</th><th>Status</th></tr></thead>
+                <tbody id="eventsBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="tab-section" id="products">
+        <div class="panel-grid">
+          <article class="card form-card">
+            <div class="card-header"><h3>Cadastrar produto</h3></div>
+            <form id="productForm" class="grid-form" enctype="multipart/form-data">
+              <input type="file" name="photo" accept="image/*" />
+              <input type="text" name="name" placeholder="Nome do produto" required />
+              <input type="text" name="sku" placeholder="SKU" />
+              <input type="text" name="category" placeholder="Categoria" />
+              <input type="number" step="0.01" name="purchase_price" placeholder="Valor de compra" required />
+              <input type="number" step="0.01" name="sale_price" placeholder="Valor de venda" required />
+              <input type="number" name="stock_quantity" placeholder="Quantidade em estoque" required />
+              <input type="number" name="low_stock_alert" placeholder="Alerta estoque baixo" value="5" required />
+              <button class="btn primary" type="submit">Salvar produto</button>
+            </form>
+          </article>
+          <article class="card">
+            <div class="card-header"><h3>Estoque</h3></div>
+            <div id="productsList" class="cards-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="tab-section" id="payments">
+        <div class="panel-grid">
+          <article class="card form-card">
+            <div class="card-header"><h3>Registrar pagamento</h3></div>
+            <form id="paymentForm" class="grid-form">
+              <select name="payment_type" id="paymentTypeSelect" required>
+                <option value="cliente_fixo">Cliente fixo</option>
+                <option value="evento">Evento</option>
+                <option value="venda_produto">Venda de produto</option>
+              </select>
+              <select name="reference_id" id="paymentReferenceSelect"><option value="">Referência</option></select>
+              <input type="text" name="customer_name" placeholder="Nome do cliente" required />
+              <label>Data do pagamento<input type="date" name="payment_date" required /></label>
+              <input type="number" step="0.01" name="amount" placeholder="Valor" required />
+              <select name="method">
+                <option value="pix">Pix</option>
+                <option value="transferencia">Transferência</option>
+                <option value="cartao">Cartão</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="boleto">Boleto</option>
+              </select>
+              <textarea name="notes" placeholder="Observações"></textarea>
+              <div id="saleItemsBox" class="nested-box hidden">
+                <h4>Itens vendidos</h4>
+                <div class="inline-grid">
+                  <select id="saleProductSelect"><option value="">Produto</option></select>
+                  <input type="number" id="saleQty" placeholder="Qtd" min="1" />
+                  <input type="number" id="saleUnitPrice" placeholder="Valor unitário" step="0.01" />
+                  <button class="btn secondary" type="button" id="addSaleItemBtn">Adicionar item</button>
+                </div>
+                <div id="saleItemsList" class="small-list"></div>
+              </div>
+              <button class="btn primary" type="submit">Salvar pagamento</button>
+            </form>
+          </article>
+          <article class="card">
+            <div class="card-header"><h3>Histórico de pagamentos</h3></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Data</th><th>Cliente</th><th>Tipo</th><th>Valor</th><th>Método</th></tr></thead>
+                <tbody id="paymentsBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <script src="/script.js"></script>
+</body>
+</html>
