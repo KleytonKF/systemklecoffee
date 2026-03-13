@@ -4,26 +4,80 @@ const mysql = require('mysql2/promise');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT || 3000);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const env = {
+  host:
+    process.env.DB_HOST ||
+    process.env.MYSQL_HOST ||
+    process.env.MYSQLHOST ||
+    process.env.HOSTNAME_DB,
+  port: Number(
+    process.env.DB_PORT ||
+      process.env.MYSQL_PORT ||
+      process.env.MYSQLPORT ||
+      3306
+  ),
+  user:
+    process.env.DB_USER ||
+    process.env.MYSQL_USER ||
+    process.env.MYSQLUSER,
+  password:
+    process.env.DB_PASSWORD ||
+    process.env.MYSQL_PASSWORD ||
+    process.env.MYSQLPASSWORD,
+  database:
+    process.env.DB_NAME ||
+    process.env.MYSQL_DATABASE ||
+    process.env.MYSQLDATABASE
+};
+
+function validateEnv() {
+  const missing = [];
+  if (!env.host) missing.push('DB_HOST');
+  if (!env.user) missing.push('DB_USER');
+  if (!env.password) missing.push('DB_PASSWORD');
+  if (!env.database) missing.push('DB_NAME');
+
+  if (missing.length) {
+    throw new Error(
+      `Variáveis de ambiente ausentes: ${missing.join(', ')}. ` +
+      'Crie o arquivo .env na raiz do projeto com as credenciais do MySQL.'
+    );
+  }
+}
+
 const dbConfig = {
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  host: env.host,
+  port: env.port,
+  user: env.user,
+  password: env.password,
+  database: env.database,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  charset: 'utf8mb4'
 };
 
 let pool;
 
 async function initDatabase() {
+  validateEnv();
+
+  console.log('Conectando ao MySQL com:');
+  console.log({
+    host: dbConfig.host,
+    port: dbConfig.port,
+    user: dbConfig.user,
+    database: dbConfig.database
+  });
+
   pool = mysql.createPool(dbConfig);
+
+  await pool.query('SELECT 1');
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS maquinas (
