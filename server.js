@@ -109,6 +109,7 @@ async function initDatabase() {
 
   await pool.query('SELECT 1');
 
+  // Tabela de usuários
   await pool.query(`
     CREATE TABLE IF NOT EXISTS usuarios (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -120,6 +121,7 @@ async function initDatabase() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
+  // Tabela de máquinas
   await pool.query(`
     CREATE TABLE IF NOT EXISTS maquinas (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -131,6 +133,21 @@ async function initDatabase() {
       patrimonio VARCHAR(80) DEFAULT NULL,
       observacoes TEXT DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  // Tabela de clientes
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS clientes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      razao_social VARCHAR(200) NOT NULL,
+      cnpj VARCHAR(18) NOT NULL UNIQUE,
+      responsavel_nome VARCHAR(120) NOT NULL,
+      responsavel_cpf VARCHAR(14),
+      contato VARCHAR(50) NOT NULL,
+      email VARCHAR(160),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
@@ -151,6 +168,7 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ========== ROTAS PÚBLICAS ==========
 app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -160,6 +178,7 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
+// ========== ROTAS DE AUTENTICAÇÃO ==========
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
@@ -216,20 +235,23 @@ app.get('/api/auth/me', (req, res) => {
   return res.json({ usuario: req.session.usuario });
 });
 
+// ========== ROTAS DO DASHBOARD ==========
 app.get('/api/dashboard', requireAuth, async (_req, res) => {
   try {
     const [[{ totalMaquinas }]] = await pool.query('SELECT COUNT(*) AS totalMaquinas FROM maquinas');
     const [[{ disponiveis }]] = await pool.query("SELECT COUNT(*) AS disponiveis FROM maquinas WHERE status_maquina = 'Disponível'");
     const [[{ emUso }]] = await pool.query("SELECT COUNT(*) AS emUso FROM maquinas WHERE status_maquina = 'Em uso'");
     const [[{ manutencao }]] = await pool.query("SELECT COUNT(*) AS manutencao FROM maquinas WHERE status_maquina = 'Manutenção'");
-    const [ultimas] = await pool.query('SELECT * FROM maquinas ORDER BY created_at DESC LIMIT 5');
+    const [[{ totalClientes }]] = await pool.query('SELECT COUNT(*) AS totalClientes FROM clientes');
     const [[{ totalUsuarios }]] = await pool.query('SELECT COUNT(*) AS totalUsuarios FROM usuarios');
+    const [ultimas] = await pool.query('SELECT * FROM maquinas ORDER BY created_at DESC LIMIT 5');
 
     res.json({
       totalMaquinas,
       disponiveis,
       emUso,
       manutencao,
+      totalClientes,
       totalUsuarios,
       ultimas
     });
@@ -238,6 +260,7 @@ app.get('/api/dashboard', requireAuth, async (_req, res) => {
   }
 });
 
+// ========== ROTAS DE MÁQUINAS ==========
 app.get('/api/maquinas', requireAuth, async (_req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM maquinas ORDER BY created_at DESC');
@@ -276,6 +299,30 @@ app.post('/api/maquinas', requireAuth, async (req, res) => {
   }
 });
 
+app.put('/api/maquinas/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, modelo, marca, status_maquina, localizacao, patrimonio, observacoes } = req.body;
+
+    const [result] = await pool.query(
+      `UPDATE maquinas 
+       SET nome = ?, modelo = ?, marca = ?, status_maquina = ?, 
+           localizacao = ?, patrimonio = ?, observacoes = ?
+       WHERE id = ?`,
+      [nome, modelo, marca, status_maquina, localizacao, patrimonio, observacoes, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Máquina não encontrada.' });
+    }
+
+    const [[maquinaAtualizada]] = await pool.query('SELECT * FROM maquinas WHERE id = ?', [id]);
+    res.json(maquinaAtualizada);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao atualizar máquina.', error: error.message });
+  }
+});
+
 app.delete('/api/maquinas/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -291,6 +338,106 @@ app.delete('/api/maquinas/:id', requireAuth, async (req, res) => {
   }
 });
 
+// ========== ROTAS DE CLIENTES ==========
+app.get('/api/clientes', requireAuth, async (_req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM clientes ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao listar clientes.', error: error.message });
+  }
+});
+
+app.get('/api/clientes/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [[cliente]] = await pool.query('SELECT * FROM clientes WHERE id = ?', [id]);
+    
+    if (!cliente) {
+      return res.status(404).json({ message: 'Cliente não encontrado.' });
+    }
+    
+    res.json(cliente);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao buscar cliente.', error: error.message });
+  }
+});
+
+app.post('/api/clientes', requireAuth, async (req, res) => {
+  try {
+    const { razao_social, cnpj, responsavel_nome, responsavel_cpf, contato, email } = req.body;
+
+    if (!razao_social || !cnpj || !responsavel_nome || !contato) {
+      return res.status(400).json({ 
+        message: 'Razão Social, CNPJ, Nome do Responsável e Contato são obrigatórios.' 
+      });
+    }
+
+    // Verifica se CNPJ já existe
+    const [existing] = await pool.query('SELECT id FROM clientes WHERE cnpj = ?', [cnpj]);
+    if (existing.length) {
+      return res.status(409).json({ message: 'Já existe um cliente com este CNPJ.' });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO clientes (razao_social, cnpj, responsavel_nome, responsavel_cpf, contato, email)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [razao_social, cnpj, responsavel_nome, responsavel_cpf || null, contato, email || null]
+    );
+
+    const [[novoCliente]] = await pool.query('SELECT * FROM clientes WHERE id = ?', [result.insertId]);
+    res.status(201).json(novoCliente);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao cadastrar cliente.', error: error.message });
+  }
+});
+
+app.put('/api/clientes/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { razao_social, cnpj, responsavel_nome, responsavel_cpf, contato, email } = req.body;
+
+    // Verifica se CNPJ já existe em outro cliente
+    const [existing] = await pool.query('SELECT id FROM clientes WHERE cnpj = ? AND id != ?', [cnpj, id]);
+    if (existing.length) {
+      return res.status(409).json({ message: 'Já existe outro cliente com este CNPJ.' });
+    }
+
+    const [result] = await pool.query(
+      `UPDATE clientes 
+       SET razao_social = ?, cnpj = ?, responsavel_nome = ?, 
+           responsavel_cpf = ?, contato = ?, email = ?
+       WHERE id = ?`,
+      [razao_social, cnpj, responsavel_nome, responsavel_cpf, contato, email, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Cliente não encontrado.' });
+    }
+
+    const [[clienteAtualizado]] = await pool.query('SELECT * FROM clientes WHERE id = ?', [id]);
+    res.json(clienteAtualizado);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao atualizar cliente.', error: error.message });
+  }
+});
+
+app.delete('/api/clientes/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [result] = await pool.query('DELETE FROM clientes WHERE id = ?', [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Cliente não encontrado.' });
+    }
+
+    res.json({ message: 'Cliente removido com sucesso.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao remover cliente.', error: error.message });
+  }
+});
+
+// ========== ROTAS DE USUÁRIOS ==========
 app.get('/api/usuarios', requireAuth, requireAdmin, async (_req, res) => {
   try {
     const [rows] = await pool.query(
@@ -299,6 +446,24 @@ app.get('/api/usuarios', requireAuth, requireAdmin, async (_req, res) => {
     res.json(rows);
   } catch (error) {
     res.status(500).json({ message: 'Erro ao listar usuários.', error: error.message });
+  }
+});
+
+app.get('/api/usuarios/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [[usuario]] = await pool.query(
+      'SELECT id, nome, email, perfil, created_at FROM usuarios WHERE id = ?',
+      [id]
+    );
+    
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+    
+    res.json(usuario);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao buscar usuário.', error: error.message });
   }
 });
 
@@ -340,10 +505,76 @@ app.post('/api/usuarios', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+app.put('/api/usuarios/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, email, perfil, senha } = req.body;
+
+    // Verifica se email já existe em outro usuário
+    const [existing] = await pool.query('SELECT id FROM usuarios WHERE email = ? AND id != ?', [email, id]);
+    if (existing.length) {
+      return res.status(409).json({ message: 'Já existe outro usuário com este e-mail.' });
+    }
+
+    let query = 'UPDATE usuarios SET nome = ?, email = ?, perfil = ?';
+    let params = [nome, email, perfil];
+
+    if (senha) {
+      if (senha.length < 6) {
+        return res.status(400).json({ message: 'A senha deve ter no mínimo 6 caracteres.' });
+      }
+      const senhaHash = await bcrypt.hash(senha, 10);
+      query += ', senha_hash = ?';
+      params.push(senhaHash);
+    }
+
+    query += ' WHERE id = ?';
+    params.push(id);
+
+    const [result] = await pool.query(query, params);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+
+    const [[usuarioAtualizado]] = await pool.query(
+      'SELECT id, nome, email, perfil, created_at FROM usuarios WHERE id = ?',
+      [id]
+    );
+
+    res.json(usuarioAtualizado);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao atualizar usuário.', error: error.message });
+  }
+});
+
+app.delete('/api/usuarios/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Impede que o admin se auto-exclua
+    if (id == req.session.usuario.id) {
+      return res.status(400).json({ message: 'Você não pode excluir seu próprio usuário.' });
+    }
+
+    const [result] = await pool.query('DELETE FROM usuarios WHERE id = ?', [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+
+    res.json({ message: 'Usuário removido com sucesso.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao remover usuário.', error: error.message });
+  }
+});
+
+// ========== ROTA PARA FRONTEND (SPA) ==========
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// ========== INICIALIZAÇÃO DO SERVIDOR ==========
 initDatabase()
   .then(() => {
     app.listen(PORT, () => {
