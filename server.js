@@ -2,11 +2,26 @@ require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
 const path = require('path');
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
 app.use(express.json());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'klecoffee_session_secret_2026',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+      maxAge: 1000 * 60 * 60 * 12
+    }
+  })
+);
 app.use(express.static(path.join(__dirname, 'public')));
 
 const env = {
@@ -45,7 +60,7 @@ function validateEnv() {
   if (missing.length) {
     throw new Error(
       `Variáveis de ambiente ausentes: ${missing.join(', ')}. ` +
-      'Crie o arquivo .env na raiz do projeto com as credenciais do MySQL.'
+        'Crie o arquivo .env na raiz do projeto com as credenciais do MySQL.'
     );
   }
 }
@@ -64,6 +79,21 @@ const dbConfig = {
 
 let pool;
 
+async function ensureDefaultAdmin() {
+  const [[{ totalUsuarios }]] = await pool.query('SELECT COUNT(*) AS totalUsuarios FROM usuarios');
+
+  if (totalUsuarios > 0) return;
+
+  const senhaHash = await bcrypt.hash('123456', 10);
+  await pool.query(
+    `INSERT INTO usuarios (nome, email, senha_hash, perfil)
+     VALUES (?, ?, ?, ?)`,
+    ['Administrador', 'admin@klecoffee.com', senhaHash, 'Administrador']
+  );
+
+  console.log('Usuário padrão criado: admin@klecoffee.com / 123456');
+}
+
 async function initDatabase() {
   validateEnv();
 
@@ -80,6 +110,17 @@ async function initDatabase() {
   await pool.query('SELECT 1');
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS usuarios (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nome VARCHAR(120) NOT NULL,
+      email VARCHAR(160) NOT NULL UNIQUE,
+      senha_hash VARCHAR(255) NOT NULL,
+      perfil ENUM('Administrador', 'Operador') NOT NULL DEFAULT 'Operador',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS maquinas (
       id INT AUTO_INCREMENT PRIMARY KEY,
       nome VARCHAR(120) NOT NULL,
@@ -92,6 +133,22 @@ async function initDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
+
+  await ensureDefaultAdmin();
+}
+
+function requireAuth(req, res, next) {
+  if (!req.session.usuario) {
+    return res.status(401).json({ message: 'Sessão expirada ou usuário não autenticado.' });
+  }
+  next();
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.session.usuario || req.session.usuario.perfil !== 'Administrador') {
+    return res.status(403).json({ message: 'Apenas administradores podem realizar esta ação.' });
+  }
+  next();
 }
 
 app.get('/api/health', async (_req, res) => {
@@ -103,19 +160,77 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-app.get('/api/dashboard', async (_req, res) => {
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, senha } = req.body;
+
+    if (!email || !senha) {
+      return res.status(400).json({ message: 'Informe e-mail e senha.' });
+    }
+
+    const [rows] = await pool.query(
+      'SELECT id, nome, email, senha_hash, perfil FROM usuarios WHERE email = ? LIMIT 1',
+      [email]
+    );
+
+    const usuario = rows[0];
+
+    if (!usuario) {
+      return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
+    }
+
+    const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
+
+    if (!senhaValida) {
+      return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
+    }
+
+    req.session.usuario = {
+      id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      perfil: usuario.perfil
+    };
+
+    res.json({ usuario: req.session.usuario });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao realizar login.', error: error.message });
+  }
+});
+
+app.post('/api/auth/logout', requireAuth, (req, res) => {
+  req.session.destroy((error) => {
+    if (error) {
+      return res.status(500).json({ message: 'Não foi possível encerrar a sessão.' });
+    }
+    res.clearCookie('connect.sid');
+    return res.json({ message: 'Logout realizado com sucesso.' });
+  });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ message: 'Usuário não autenticado.' });
+  }
+
+  return res.json({ usuario: req.session.usuario });
+});
+
+app.get('/api/dashboard', requireAuth, async (_req, res) => {
   try {
     const [[{ totalMaquinas }]] = await pool.query('SELECT COUNT(*) AS totalMaquinas FROM maquinas');
     const [[{ disponiveis }]] = await pool.query("SELECT COUNT(*) AS disponiveis FROM maquinas WHERE status_maquina = 'Disponível'");
     const [[{ emUso }]] = await pool.query("SELECT COUNT(*) AS emUso FROM maquinas WHERE status_maquina = 'Em uso'");
     const [[{ manutencao }]] = await pool.query("SELECT COUNT(*) AS manutencao FROM maquinas WHERE status_maquina = 'Manutenção'");
     const [ultimas] = await pool.query('SELECT * FROM maquinas ORDER BY created_at DESC LIMIT 5');
+    const [[{ totalUsuarios }]] = await pool.query('SELECT COUNT(*) AS totalUsuarios FROM usuarios');
 
     res.json({
       totalMaquinas,
       disponiveis,
       emUso,
       manutencao,
+      totalUsuarios,
       ultimas
     });
   } catch (error) {
@@ -123,7 +238,7 @@ app.get('/api/dashboard', async (_req, res) => {
   }
 });
 
-app.get('/api/maquinas', async (_req, res) => {
+app.get('/api/maquinas', requireAuth, async (_req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM maquinas ORDER BY created_at DESC');
     res.json(rows);
@@ -132,7 +247,7 @@ app.get('/api/maquinas', async (_req, res) => {
   }
 });
 
-app.post('/api/maquinas', async (req, res) => {
+app.post('/api/maquinas', requireAuth, async (req, res) => {
   try {
     const { nome, modelo, marca, status_maquina, localizacao, patrimonio, observacoes } = req.body;
 
@@ -161,7 +276,7 @@ app.post('/api/maquinas', async (req, res) => {
   }
 });
 
-app.delete('/api/maquinas/:id', async (req, res) => {
+app.delete('/api/maquinas/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const [result] = await pool.query('DELETE FROM maquinas WHERE id = ?', [id]);
@@ -173,6 +288,55 @@ app.delete('/api/maquinas/:id', async (req, res) => {
     res.json({ message: 'Máquina removida com sucesso.' });
   } catch (error) {
     res.status(500).json({ message: 'Erro ao remover máquina.', error: error.message });
+  }
+});
+
+app.get('/api/usuarios', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, nome, email, perfil, created_at FROM usuarios ORDER BY created_at DESC'
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao listar usuários.', error: error.message });
+  }
+});
+
+app.post('/api/usuarios', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { nome, email, senha, perfil } = req.body;
+
+    if (!nome || !email || !senha) {
+      return res.status(400).json({ message: 'Nome, e-mail e senha são obrigatórios.' });
+    }
+
+    if (String(senha).length < 6) {
+      return res.status(400).json({ message: 'A senha deve ter no mínimo 6 caracteres.' });
+    }
+
+    const emailNormalizado = String(email).trim().toLowerCase();
+    const [existing] = await pool.query('SELECT id FROM usuarios WHERE email = ? LIMIT 1', [emailNormalizado]);
+
+    if (existing.length) {
+      return res.status(409).json({ message: 'Já existe um usuário com este e-mail.' });
+    }
+
+    const senhaHash = await bcrypt.hash(String(senha), 10);
+
+    const [result] = await pool.query(
+      `INSERT INTO usuarios (nome, email, senha_hash, perfil)
+       VALUES (?, ?, ?, ?)`,
+      [nome, emailNormalizado, senhaHash, perfil === 'Administrador' ? 'Administrador' : 'Operador']
+    );
+
+    const [[novoUsuario]] = await pool.query(
+      'SELECT id, nome, email, perfil, created_at FROM usuarios WHERE id = ?',
+      [result.insertId]
+    );
+
+    res.status(201).json(novoUsuario);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao criar usuário.', error: error.message });
   }
 });
 

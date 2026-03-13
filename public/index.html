@@ -10,15 +10,41 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="page-shell">
-    <header class="header">
-      <div class="header-top">
-        <div class="brand-wrap">
-          <label for="logoInput" class="logo-box" title="Clique para escolher sua logo">
-            <img id="brandLogo" alt="Logo da KleCoffee" />
-            <span id="logoFallback" class="logo-fallback">K</span>
-          </label>
+  <div id="loginView" class="auth-shell">
+    <section class="auth-card">
+      <div class="auth-brand">
+        <span class="eyebrow">KleCoffee System</span>
+        <h1>Entrar no sistema</h1>
+        <p>Faça login para gerenciar máquinas e usuários.</p>
+      </div>
 
+      <form id="login-form" class="auth-form">
+        <div class="field">
+          <label for="loginEmail">E-mail</label>
+          <input id="loginEmail" name="email" type="email" placeholder="admin@klecoffee.com" required />
+        </div>
+
+        <div class="field">
+          <label for="loginSenha">Senha</label>
+          <input id="loginSenha" name="senha" type="password" placeholder="Digite sua senha" required />
+        </div>
+
+        <button class="primary-btn" type="submit">Entrar</button>
+        <p id="login-message" class="form-message"></p>
+      </form>
+
+      <div class="auth-tip">
+        <strong>Primeiro acesso</strong>
+        <span>Usuário: admin@klecoffee.com</span>
+        <span>Senha: 123456</span>
+      </div>
+    </section>
+  </div>
+
+  <div id="appView" class="page-shell hidden-app">
+    <header class="header fixed-header">
+      <div class="header-top">
+        <div class="brand-wrap simple-brand">
           <div>
             <span class="eyebrow dark">Painel de gestão</span>
             <h1>KleCoffee</h1>
@@ -28,19 +54,24 @@
 
         <div class="header-actions">
           <div class="status-pill" id="api-status">Verificando conexão...</div>
-          <button id="openLogoModal" class="ghost-btn" type="button">Personalizar logo</button>
+          <div class="user-chip">
+            <strong id="currentUserName">-</strong>
+            <span id="currentUserRole">-</span>
+          </div>
+          <button id="logoutButton" class="ghost-btn" type="button">Sair</button>
         </div>
       </div>
 
       <div class="nav-bar">
         <nav class="menu">
-          <button class="menu-item active" data-tab="dashboard">Dashboard</button>
-          <button class="menu-item" data-tab="maquinas">Máquinas</button>
+          <button class="menu-item active" data-tab="dashboard" type="button">Dashboard</button>
+          <button class="menu-item" data-tab="maquinas" type="button">Máquinas</button>
+          <button class="menu-item" data-tab="usuarios" type="button">Usuários</button>
         </nav>
       </div>
     </header>
 
-    <main class="content">
+    <main class="content with-fixed-menu">
       <section class="hero-card">
         <div>
           <span class="eyebrow">Área principal</span>
@@ -51,7 +82,7 @@
       </section>
 
       <section id="dashboard" class="tab active">
-        <div class="cards-grid">
+        <div class="cards-grid dashboard-cards-grid">
           <article class="metric-card highlight">
             <span>Total de máquinas</span>
             <strong id="totalMaquinas">0</strong>
@@ -67,6 +98,10 @@
           <article class="metric-card">
             <span>Manutenção</span>
             <strong id="manutencao">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Usuários cadastrados</span>
+            <strong id="totalUsuarios">0</strong>
           </article>
         </div>
 
@@ -119,7 +154,7 @@
 
                 <div class="field">
                   <label for="modelo">Modelo</label>
-                  <input id="modelo" name="modelo" placeholder="Ex: Gaggia Magenta Prestige" required />
+                  <input id="modelo" name="modelo" placeholder="Ex: Magenta Prestige" required />
                 </div>
 
                 <div class="field">
@@ -130,73 +165,92 @@
                 <div class="field">
                   <label for="status_maquina">Status</label>
                   <select id="status_maquina" name="status_maquina">
-                    <option>Disponível</option>
-                    <option>Em uso</option>
-                    <option>Manutenção</option>
+                    <option value="Disponível">Disponível</option>
+                    <option value="Em uso">Em uso</option>
+                    <option value="Manutenção">Manutenção</option>
                   </select>
                 </div>
 
                 <div class="field">
                   <label for="localizacao">Localização</label>
-                  <input id="localizacao" name="localizacao" placeholder="Ex: Cliente X / Estoque" />
+                  <input id="localizacao" name="localizacao" placeholder="Ex: Boa Viagem" />
                 </div>
 
                 <div class="field">
                   <label for="patrimonio">Patrimônio</label>
-                  <input id="patrimonio" name="patrimonio" placeholder="Ex: KL-001" />
+                  <input id="patrimonio" name="patrimonio" placeholder="Ex: KC-001" />
+                </div>
+
+                <div class="field field-full">
+                  <label for="observacoes">Observações</label>
+                  <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações adicionais"></textarea>
                 </div>
               </div>
 
-              <div class="field">
-                <label for="observacoes">Observações</label>
-                <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações extras sobre a máquina..."></textarea>
-              </div>
-
-              <button type="submit" class="primary-btn">Salvar máquina</button>
+              <button class="primary-btn" type="submit">Salvar máquina</button>
               <p id="form-message" class="form-message"></p>
             </form>
           </section>
 
-          <section class="panel list-panel">
+          <section class="panel">
             <div class="panel-header">
               <h3>Máquinas cadastradas</h3>
-              <span>Controle completo</span>
+              <span>Lista atual</span>
             </div>
             <div id="machines-table" class="table-wrapper"></div>
           </section>
         </div>
       </section>
+
+      <section id="usuarios" class="tab">
+        <div class="machines-layout">
+          <section class="panel form-panel">
+            <div class="panel-header">
+              <h3>Novo usuário</h3>
+              <span>Acesso ao sistema</span>
+            </div>
+
+            <form id="user-form">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="userNome">Nome completo</label>
+                  <input id="userNome" name="nome" placeholder="Ex: Kleyton Falcão" required />
+                </div>
+
+                <div class="field">
+                  <label for="userEmail">E-mail</label>
+                  <input id="userEmail" name="email" type="email" placeholder="usuario@klecoffee.com" required />
+                </div>
+
+                <div class="field">
+                  <label for="userSenha">Senha</label>
+                  <input id="userSenha" name="senha" type="password" placeholder="Mínimo 6 caracteres" required />
+                </div>
+
+                <div class="field">
+                  <label for="userPerfil">Perfil</label>
+                  <select id="userPerfil" name="perfil">
+                    <option value="Operador">Operador</option>
+                    <option value="Administrador">Administrador</option>
+                  </select>
+                </div>
+              </div>
+
+              <button class="primary-btn" type="submit">Criar usuário</button>
+              <p id="user-form-message" class="form-message"></p>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Usuários cadastrados</h3>
+              <span>Controle de acesso</span>
+            </div>
+            <div id="users-table" class="table-wrapper"></div>
+          </section>
+        </div>
+      </section>
     </main>
-  </div>
-
-  <div id="logoModal" class="modal hidden">
-    <div class="modal-card">
-      <div class="panel-header modal-header">
-        <div>
-          <h3>Personalizar logo</h3>
-          <span>Escolha uma imagem para aparecer no topo do sistema</span>
-        </div>
-        <button id="closeLogoModal" class="close-btn" type="button">×</button>
-      </div>
-
-      <div class="field">
-        <label for="logoInput">Enviar arquivo de imagem</label>
-        <input id="logoInput" type="file" accept="image/*" />
-      </div>
-
-      <div class="logo-preview-card">
-        <span>Pré-visualização</span>
-        <div class="logo-preview-box">
-          <img id="logoPreview" alt="Pré-visualização da logo" />
-          <span id="logoPreviewFallback" class="logo-fallback">K</span>
-        </div>
-      </div>
-
-      <div class="modal-actions">
-        <button id="removeLogo" class="ghost-btn" type="button">Remover logo</button>
-        <button id="saveLogo" class="primary-btn" type="button">Salvar logo</button>
-      </div>
-    </div>
   </div>
 
   <script src="script.js"></script>

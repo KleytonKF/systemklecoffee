@@ -1,25 +1,27 @@
+const loginView = document.getElementById('loginView');
+const appView = document.getElementById('appView');
+const loginForm = document.getElementById('login-form');
+const loginMessage = document.getElementById('login-message');
+const logoutButton = document.getElementById('logoutButton');
+const currentUserName = document.getElementById('currentUserName');
+const currentUserRole = document.getElementById('currentUserRole');
+
 const tabs = document.querySelectorAll('.menu-item');
 const sections = document.querySelectorAll('.tab');
 const pageTitle = document.getElementById('page-title');
 const pageDescription = document.getElementById('page-description');
 const apiStatus = document.getElementById('api-status');
-const form = document.getElementById('machine-form');
-const formMessage = document.getElementById('form-message');
+const machineForm = document.getElementById('machine-form');
+const machineFormMessage = document.getElementById('form-message');
 const machinesTable = document.getElementById('machines-table');
 const ultimasMaquinas = document.getElementById('ultimasMaquinas');
+const totalUsuarios = document.getElementById('totalUsuarios');
 
-const logoModal = document.getElementById('logoModal');
-const openLogoModal = document.getElementById('openLogoModal');
-const closeLogoModal = document.getElementById('closeLogoModal');
-const logoInput = document.getElementById('logoInput');
-const brandLogo = document.getElementById('brandLogo');
-const logoFallback = document.getElementById('logoFallback');
-const logoPreview = document.getElementById('logoPreview');
-const logoPreviewFallback = document.getElementById('logoPreviewFallback');
-const saveLogo = document.getElementById('saveLogo');
-const removeLogo = document.getElementById('removeLogo');
+const userForm = document.getElementById('user-form');
+const userFormMessage = document.getElementById('user-form-message');
+const usersTable = document.getElementById('users-table');
 
-let pendingLogo = localStorage.getItem('klecoffee_logo') || '';
+let currentUser = null;
 
 function switchTab(tabName) {
   tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabName));
@@ -28,10 +30,17 @@ function switchTab(tabName) {
   if (tabName === 'dashboard') {
     pageTitle.textContent = 'Dashboard';
     pageDescription.textContent = 'Acompanhe rapidamente o panorama das máquinas da KleCoffee.';
-  } else {
+    return;
+  }
+
+  if (tabName === 'maquinas') {
     pageTitle.textContent = 'Máquinas';
     pageDescription.textContent = 'Cadastre, visualize e acompanhe todas as máquinas da operação.';
+    return;
   }
+
+  pageTitle.textContent = 'Usuários';
+  pageDescription.textContent = 'Crie novos acessos e acompanhe os usuários cadastrados no sistema.';
 }
 
 tabs.forEach(button => {
@@ -44,68 +53,51 @@ function normalizeStatus(status) {
   return 'manutencao';
 }
 
-function applyLogo(logoSrc) {
-  const hasLogo = Boolean(logoSrc);
-  brandLogo.style.display = hasLogo ? 'block' : 'none';
-  logoFallback.style.display = hasLogo ? 'none' : 'grid';
-  logoPreview.style.display = hasLogo ? 'block' : 'none';
-  logoPreviewFallback.style.display = hasLogo ? 'none' : 'grid';
+function showLogin() {
+  loginView.style.display = 'grid';
+  appView.style.display = 'none';
+}
 
-  if (hasLogo) {
-    brandLogo.src = logoSrc;
-    logoPreview.src = logoSrc;
-  } else {
-    brandLogo.removeAttribute('src');
-    logoPreview.removeAttribute('src');
+function showApp() {
+  loginView.style.display = 'none';
+  appView.style.display = 'block';
+}
+
+function setCurrentUser(usuario) {
+  currentUser = usuario;
+  currentUserName.textContent = usuario?.nome || '-';
+  currentUserRole.textContent = usuario?.perfil || '-';
+
+  const isAdmin = usuario?.perfil === 'Administrador';
+  document.querySelector('[data-tab="usuarios"]').style.display = isAdmin ? 'inline-flex' : 'none';
+  document.getElementById('usuarios').style.display = isAdmin ? '' : 'none';
+
+  if (!isAdmin && document.querySelector('.menu-item.active')?.dataset.tab === 'usuarios') {
+    switchTab('dashboard');
   }
 }
 
-function openModal() {
-  applyLogo(pendingLogo || localStorage.getItem('klecoffee_logo') || '');
-  logoModal.classList.remove('hidden');
-}
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    },
+    ...options
+  });
 
-function closeModal() {
-  logoModal.classList.add('hidden');
-}
+  const data = await response.json().catch(() => ({}));
 
-openLogoModal.addEventListener('click', openModal);
-closeLogoModal.addEventListener('click', closeModal);
-logoModal.addEventListener('click', (event) => {
-  if (event.target === logoModal) closeModal();
-});
-
-logoInput.addEventListener('change', () => {
-  const file = logoInput.files?.[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    pendingLogo = reader.result;
-    applyLogo(pendingLogo);
-  };
-  reader.readAsDataURL(file);
-});
-
-saveLogo.addEventListener('click', () => {
-  if (pendingLogo) {
-    localStorage.setItem('klecoffee_logo', pendingLogo);
+  if (!response.ok) {
+    throw new Error(data.message || 'Não foi possível concluir a solicitação.');
   }
-  applyLogo(localStorage.getItem('klecoffee_logo') || pendingLogo);
-  closeModal();
-});
 
-removeLogo.addEventListener('click', () => {
-  pendingLogo = '';
-  logoInput.value = '';
-  localStorage.removeItem('klecoffee_logo');
-  applyLogo('');
-});
+  return data;
+}
 
 async function checkApi() {
   try {
-    const response = await fetch('/api/health');
-    const data = await response.json();
+    const data = await fetchJson('/api/health', { headers: {} });
     apiStatus.textContent = data.message;
   } catch (_error) {
     apiStatus.textContent = 'Falha na conexão com a API';
@@ -114,13 +106,13 @@ async function checkApi() {
 
 async function loadDashboard() {
   try {
-    const response = await fetch('/api/dashboard');
-    const data = await response.json();
+    const data = await fetchJson('/api/dashboard');
 
     document.getElementById('totalMaquinas').textContent = data.totalMaquinas;
     document.getElementById('disponiveis').textContent = data.disponiveis;
     document.getElementById('emUso').textContent = data.emUso;
     document.getElementById('manutencao').textContent = data.manutencao;
+    totalUsuarios.textContent = data.totalUsuarios;
 
     const total = Math.max(data.totalMaquinas, 1);
     document.getElementById('barDisponiveis').style.width = `${(data.disponiveis / total) * 100}%`;
@@ -142,14 +134,13 @@ async function loadDashboard() {
       </div>
     `).join('');
   } catch (error) {
-    ultimasMaquinas.innerHTML = '<div class="empty-state">Não foi possível carregar o dashboard.</div>';
+    ultimasMaquinas.innerHTML = `<div class="empty-state">${error.message}</div>`;
   }
 }
 
 async function loadMachines() {
   try {
-    const response = await fetch('/api/maquinas');
-    const data = await response.json();
+    const data = await fetchJson('/api/maquinas');
 
     if (!data.length) {
       machinesTable.innerHTML = '<div class="empty-state">Nenhuma máquina cadastrada no momento.</div>';
@@ -186,39 +177,129 @@ async function loadMachines() {
         </tbody>
       </table>
     `;
-  } catch (_error) {
-    machinesTable.innerHTML = '<div class="empty-state">Erro ao carregar as máquinas.</div>';
+  } catch (error) {
+    machinesTable.innerHTML = `<div class="empty-state">${error.message}</div>`;
   }
 }
 
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  formMessage.textContent = 'Salvando...';
-  formMessage.className = 'form-message';
-
-  const formData = new FormData(form);
-  const payload = Object.fromEntries(formData.entries());
+async function loadUsers() {
+  if (currentUser?.perfil !== 'Administrador') {
+    usersTable.innerHTML = '<div class="empty-state">Apenas administradores podem visualizar os usuários.</div>';
+    return;
+  }
 
   try {
-    const response = await fetch('/api/maquinas', {
+    const data = await fetchJson('/api/usuarios');
+
+    if (!data.length) {
+      usersTable.innerHTML = '<div class="empty-state">Nenhum usuário cadastrado.</div>';
+      return;
+    }
+
+    usersTable.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Perfil</th>
+            <th>Criado em</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(user => `
+            <tr>
+              <td>${user.nome}</td>
+              <td>${user.email}</td>
+              <td><span class="badge neutral-badge">${user.perfil}</span></td>
+              <td>${new Date(user.created_at).toLocaleDateString('pt-BR')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (error) {
+    usersTable.innerHTML = `<div class="empty-state">${error.message}</div>`;
+  }
+}
+
+loginForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  loginMessage.textContent = 'Entrando...';
+  loginMessage.className = 'form-message';
+
+  const payload = Object.fromEntries(new FormData(loginForm).entries());
+
+  try {
+    const data = await fetchJson('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    setCurrentUser(data.usuario);
+    showApp();
+    loginForm.reset();
+    await initializeAppData();
+  } catch (error) {
+    loginMessage.textContent = error.message;
+    loginMessage.className = 'form-message error';
+  }
+});
 
-    if (!response.ok) {
-      throw new Error(data.message || 'Não foi possível salvar.');
-    }
+logoutButton.addEventListener('click', async () => {
+  try {
+    await fetchJson('/api/auth/logout', { method: 'POST' });
+  } catch (_error) {
+    // ignora e volta para o login mesmo assim
+  }
 
-    form.reset();
-    formMessage.textContent = 'Máquina cadastrada com sucesso.';
-    formMessage.className = 'form-message success';
+  currentUser = null;
+  showLogin();
+});
+
+machineForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  machineFormMessage.textContent = 'Salvando...';
+  machineFormMessage.className = 'form-message';
+
+  const payload = Object.fromEntries(new FormData(machineForm).entries());
+
+  try {
+    await fetchJson('/api/maquinas', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    machineForm.reset();
+    machineFormMessage.textContent = 'Máquina cadastrada com sucesso.';
+    machineFormMessage.className = 'form-message success';
     await Promise.all([loadMachines(), loadDashboard()]);
   } catch (error) {
-    formMessage.textContent = error.message;
-    formMessage.className = 'form-message error';
+    machineFormMessage.textContent = error.message;
+    machineFormMessage.className = 'form-message error';
+  }
+});
+
+userForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  userFormMessage.textContent = 'Criando usuário...';
+  userFormMessage.className = 'form-message';
+
+  const payload = Object.fromEntries(new FormData(userForm).entries());
+
+  try {
+    await fetchJson('/api/usuarios', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    userForm.reset();
+    userFormMessage.textContent = 'Usuário criado com sucesso.';
+    userFormMessage.className = 'form-message success';
+    await Promise.all([loadUsers(), loadDashboard()]);
+  } catch (error) {
+    userFormMessage.textContent = error.message;
+    userFormMessage.className = 'form-message error';
   }
 });
 
@@ -226,23 +307,28 @@ async function deleteMachine(id) {
   if (!confirm('Deseja realmente excluir esta máquina?')) return;
 
   try {
-    const response = await fetch(`/api/maquinas/${id}`, {
-      method: 'DELETE'
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Erro ao excluir.');
-    }
-
+    await fetchJson(`/api/maquinas/${id}`, { method: 'DELETE' });
     await Promise.all([loadMachines(), loadDashboard()]);
   } catch (error) {
     alert(error.message);
   }
 }
 
+async function initializeAppData() {
+  switchTab('dashboard');
+  await Promise.all([checkApi(), loadDashboard(), loadMachines(), loadUsers()]);
+}
+
+async function bootstrap() {
+  try {
+    const data = await fetchJson('/api/auth/me', { headers: {} });
+    setCurrentUser(data.usuario);
+    showApp();
+    await initializeAppData();
+  } catch (_error) {
+    showLogin();
+  }
+}
+
 window.deleteMachine = deleteMachine;
-applyLogo(localStorage.getItem('klecoffee_logo') || '');
-checkApi();
-loadDashboard();
-loadMachines();
+bootstrap();
