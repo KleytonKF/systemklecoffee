@@ -10,30 +10,45 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="layout">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-badge">K</div>
-        <div>
-          <h1>KleCoffee</h1>
-          <p>Machine Manager</p>
+  <div class="page-shell">
+    <header class="header">
+      <div class="header-top">
+        <div class="brand-wrap">
+          <label for="logoInput" class="logo-box" title="Clique para escolher sua logo">
+            <img id="brandLogo" alt="Logo da KleCoffee" />
+            <span id="logoFallback" class="logo-fallback">K</span>
+          </label>
+
+          <div>
+            <span class="eyebrow dark">Painel de gestão</span>
+            <h1>KleCoffee</h1>
+            <p class="brand-subtitle">Sistema de controle de máquinas de café</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="status-pill" id="api-status">Verificando conexão...</div>
+          <button id="openLogoModal" class="ghost-btn" type="button">Personalizar logo</button>
         </div>
       </div>
 
-      <nav class="menu">
-        <button class="menu-item active" data-tab="dashboard">Dashboard</button>
-        <button class="menu-item" data-tab="maquinas">Máquinas</button>
-      </nav>
-    </aside>
+      <div class="nav-bar">
+        <nav class="menu">
+          <button class="menu-item active" data-tab="dashboard">Dashboard</button>
+          <button class="menu-item" data-tab="maquinas">Máquinas</button>
+        </nav>
+      </div>
+    </header>
 
     <main class="content">
-      <header class="topbar">
+      <section class="hero-card">
         <div>
-          <span class="eyebrow">Painel de gestão</span>
+          <span class="eyebrow">Área principal</span>
           <h2 id="page-title">Dashboard</h2>
+          <p id="page-description">Acompanhe rapidamente o panorama das máquinas da KleCoffee.</p>
         </div>
-        <div class="status-pill" id="api-status">Verificando conexão...</div>
-      </header>
+        <div class="hero-accent"></div>
+      </section>
 
       <section id="dashboard" class="tab active">
         <div class="cards-grid">
@@ -152,6 +167,36 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div id="logoModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="panel-header modal-header">
+        <div>
+          <h3>Personalizar logo</h3>
+          <span>Escolha uma imagem para aparecer no topo do sistema</span>
+        </div>
+        <button id="closeLogoModal" class="close-btn" type="button">×</button>
+      </div>
+
+      <div class="field">
+        <label for="logoInput">Enviar arquivo de imagem</label>
+        <input id="logoInput" type="file" accept="image/*" />
+      </div>
+
+      <div class="logo-preview-card">
+        <span>Pré-visualização</span>
+        <div class="logo-preview-box">
+          <img id="logoPreview" alt="Pré-visualização da logo" />
+          <span id="logoPreviewFallback" class="logo-fallback">K</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="removeLogo" class="ghost-btn" type="button">Remover logo</button>
+        <button id="saveLogo" class="primary-btn" type="button">Salvar logo</button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>
