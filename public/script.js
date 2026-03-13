@@ -1,16 +1,37 @@
 const tabs = document.querySelectorAll('.menu-item');
 const sections = document.querySelectorAll('.tab');
 const pageTitle = document.getElementById('page-title');
+const pageDescription = document.getElementById('page-description');
 const apiStatus = document.getElementById('api-status');
 const form = document.getElementById('machine-form');
 const formMessage = document.getElementById('form-message');
 const machinesTable = document.getElementById('machines-table');
 const ultimasMaquinas = document.getElementById('ultimasMaquinas');
 
+const logoModal = document.getElementById('logoModal');
+const openLogoModal = document.getElementById('openLogoModal');
+const closeLogoModal = document.getElementById('closeLogoModal');
+const logoInput = document.getElementById('logoInput');
+const brandLogo = document.getElementById('brandLogo');
+const logoFallback = document.getElementById('logoFallback');
+const logoPreview = document.getElementById('logoPreview');
+const logoPreviewFallback = document.getElementById('logoPreviewFallback');
+const saveLogo = document.getElementById('saveLogo');
+const removeLogo = document.getElementById('removeLogo');
+
+let pendingLogo = localStorage.getItem('klecoffee_logo') || '';
+
 function switchTab(tabName) {
   tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabName));
   sections.forEach(section => section.classList.toggle('active', section.id === tabName));
-  pageTitle.textContent = tabName === 'dashboard' ? 'Dashboard' : 'Máquinas';
+
+  if (tabName === 'dashboard') {
+    pageTitle.textContent = 'Dashboard';
+    pageDescription.textContent = 'Acompanhe rapidamente o panorama das máquinas da KleCoffee.';
+  } else {
+    pageTitle.textContent = 'Máquinas';
+    pageDescription.textContent = 'Cadastre, visualize e acompanhe todas as máquinas da operação.';
+  }
 }
 
 tabs.forEach(button => {
@@ -22,6 +43,64 @@ function normalizeStatus(status) {
   if (status === 'Em uso') return 'emuso';
   return 'manutencao';
 }
+
+function applyLogo(logoSrc) {
+  const hasLogo = Boolean(logoSrc);
+  brandLogo.style.display = hasLogo ? 'block' : 'none';
+  logoFallback.style.display = hasLogo ? 'none' : 'grid';
+  logoPreview.style.display = hasLogo ? 'block' : 'none';
+  logoPreviewFallback.style.display = hasLogo ? 'none' : 'grid';
+
+  if (hasLogo) {
+    brandLogo.src = logoSrc;
+    logoPreview.src = logoSrc;
+  } else {
+    brandLogo.removeAttribute('src');
+    logoPreview.removeAttribute('src');
+  }
+}
+
+function openModal() {
+  applyLogo(pendingLogo || localStorage.getItem('klecoffee_logo') || '');
+  logoModal.classList.remove('hidden');
+}
+
+function closeModal() {
+  logoModal.classList.add('hidden');
+}
+
+openLogoModal.addEventListener('click', openModal);
+closeLogoModal.addEventListener('click', closeModal);
+logoModal.addEventListener('click', (event) => {
+  if (event.target === logoModal) closeModal();
+});
+
+logoInput.addEventListener('change', () => {
+  const file = logoInput.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingLogo = reader.result;
+    applyLogo(pendingLogo);
+  };
+  reader.readAsDataURL(file);
+});
+
+saveLogo.addEventListener('click', () => {
+  if (pendingLogo) {
+    localStorage.setItem('klecoffee_logo', pendingLogo);
+  }
+  applyLogo(localStorage.getItem('klecoffee_logo') || pendingLogo);
+  closeModal();
+});
+
+removeLogo.addEventListener('click', () => {
+  pendingLogo = '';
+  logoInput.value = '';
+  localStorage.removeItem('klecoffee_logo');
+  applyLogo('');
+});
 
 async function checkApi() {
   try {
@@ -163,7 +242,7 @@ async function deleteMachine(id) {
 }
 
 window.deleteMachine = deleteMachine;
-
+applyLogo(localStorage.getItem('klecoffee_logo') || '');
 checkApi();
 loadDashboard();
 loadMachines();
