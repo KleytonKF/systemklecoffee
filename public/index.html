@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KleCoffee System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-badge">K</div>
+        <div>
+          <h1>KleCoffee</h1>
+          <p>Machine Manager</p>
+        </div>
+      </div>
+
+      <nav class="menu">
+        <button class="menu-item active" data-tab="dashboard">Dashboard</button>
+        <button class="menu-item" data-tab="maquinas">Máquinas</button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">Painel de gestão</span>
+          <h2 id="page-title">Dashboard</h2>
+        </div>
+        <div class="status-pill" id="api-status">Verificando conexão...</div>
+      </header>
+
+      <section id="dashboard" class="tab active">
+        <div class="cards-grid">
+          <article class="metric-card highlight">
+            <span>Total de máquinas</span>
+            <strong id="totalMaquinas">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Disponíveis</span>
+            <strong id="disponiveis">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Em uso</span>
+            <strong id="emUso">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Manutenção</span>
+            <strong id="manutencao">0</strong>
+          </article>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="panel chart-panel">
+            <div class="panel-header">
+              <h3>Resumo visual</h3>
+              <span>Distribuição por status</span>
+            </div>
+            <div class="bars">
+              <div class="bar-group">
+                <label>Disponíveis</label>
+                <div class="bar-track"><div id="barDisponiveis" class="bar-fill"></div></div>
+              </div>
+              <div class="bar-group">
+                <label>Em uso</label>
+                <div class="bar-track"><div id="barEmUso" class="bar-fill secondary"></div></div>
+              </div>
+              <div class="bar-group">
+                <label>Manutenção</label>
+                <div class="bar-track"><div id="barManutencao" class="bar-fill muted"></div></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Últimas máquinas cadastradas</h3>
+              <span>Visão rápida</span>
+            </div>
+            <div id="ultimasMaquinas" class="list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="maquinas" class="tab">
+        <div class="machines-layout">
+          <section class="panel form-panel">
+            <div class="panel-header">
+              <h3>Cadastrar máquina</h3>
+              <span>Preencha os dados abaixo</span>
+            </div>
+
+            <form id="machine-form">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="nome">Nome da máquina</label>
+                  <input id="nome" name="nome" placeholder="Ex: Máquina Recepção" required />
+                </div>
+
+                <div class="field">
+                  <label for="modelo">Modelo</label>
+                  <input id="modelo" name="modelo" placeholder="Ex: Gaggia Magenta Prestige" required />
+                </div>
+
+                <div class="field">
+                  <label for="marca">Marca</label>
+                  <input id="marca" name="marca" placeholder="Ex: Gaggia" required />
+                </div>
+
+                <div class="field">
+                  <label for="status_maquina">Status</label>
+                  <select id="status_maquina" name="status_maquina">
+                    <option>Disponível</option>
+                    <option>Em uso</option>
+                    <option>Manutenção</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="localizacao">Localização</label>
+                  <input id="localizacao" name="localizacao" placeholder="Ex: Cliente X / Estoque" />
+                </div>
+
+                <div class="field">
+                  <label for="patrimonio">Patrimônio</label>
+                  <input id="patrimonio" name="patrimonio" placeholder="Ex: KL-001" />
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="observacoes">Observações</label>
+                <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações extras sobre a máquina..."></textarea>
+              </div>
+
+              <button type="submit" class="primary-btn">Salvar máquina</button>
+              <p id="form-message" class="form-message"></p>
+            </form>
+          </section>
+
+          <section class="panel list-panel">
+            <div class="panel-header">
+              <h3>Máquinas cadastradas</h3>
+              <span>Controle completo</span>
+            </div>
+            <div id="machines-table" class="table-wrapper"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
