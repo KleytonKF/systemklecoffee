@@ -1,334 +1,168 @@
-const loginView = document.getElementById('loginView');
-const appView = document.getElementById('appView');
-const loginForm = document.getElementById('login-form');
-const loginMessage = document.getElementById('login-message');
-const logoutButton = document.getElementById('logoutButton');
-const currentUserName = document.getElementById('currentUserName');
-const currentUserRole = document.getElementById('currentUserRole');
+// Dados simulados para teste
+const mockData = {
+    maquinas: [
+        { id: 1, nome: 'Máquina Espresso X1', status: 'active', data: '2024-01-15' },
+        { id: 2, nome: 'Máquina Café Filtrado', status: 'active', data: '2024-01-10' },
+        { id: 3, nome: 'Máquina Cappuccino', status: 'inactive', data: '2024-01-05' },
+    ],
+    clientes: [
+        { id: 1, nome: 'João Silva', status: 'active', data: '2024-01-20' },
+        { id: 2, nome: 'Maria Santos', status: 'active', data: '2024-01-18' },
+        { id: 3, nome: 'Pedro Oliveira', status: 'inactive', data: '2024-01-15' },
+    ],
+    eventos: [
+        { id: 1, nome: 'Workshop Café', status: 'active', data: '2024-02-10' },
+        { id: 2, nome: 'Degustação', status: 'active', data: '2024-02-05' },
+    ],
+    estoque: [
+        { id: 1, nome: 'Café Arábica', status: 'active', data: '2024-01-25' },
+        { id: 2, nome: 'Leite Integral', status: 'active', data: '2024-01-23' },
+        { id: 3, nome: 'Cápsulas', status: 'inactive', data: '2024-01-20' },
+    ],
+    pagamentos: [
+        { id: 1, nome: 'Cliente A - Mensalidade', status: 'active', data: '2024-01-30' },
+        { id: 2, nome: 'Cliente B - Evento', status: 'active', data: '2024-01-28' },
+    ],
+    configuracoes: [
+        { id: 1, nome: 'Configuração Sistema', status: 'active', data: '2024-01-01' },
+    ]
+};
 
-const tabs = document.querySelectorAll('.menu-item');
-const sections = document.querySelectorAll('.tab');
+// Elementos do DOM
+const menuItems = document.querySelectorAll('.menu-item');
 const pageTitle = document.getElementById('page-title');
-const pageDescription = document.getElementById('page-description');
-const apiStatus = document.getElementById('api-status');
-const machineForm = document.getElementById('machine-form');
-const machineFormMessage = document.getElementById('form-message');
-const machinesTable = document.getElementById('machines-table');
-const ultimasMaquinas = document.getElementById('ultimasMaquinas');
-const totalUsuarios = document.getElementById('totalUsuarios');
+const tableBody = document.getElementById('tableBody');
+const totalMaquinas = document.getElementById('totalMaquinas');
+const totalClientes = document.getElementById('totalClientes');
+const totalEstoque = document.getElementById('totalEstoque');
+const totalRecebimentos = document.getElementById('totalRecebimentos');
+const btnNovo = document.getElementById('btnNovo');
 
-const userForm = document.getElementById('user-form');
-const userFormMessage = document.getElementById('user-form-message');
-const usersTable = document.getElementById('users-table');
-
-let currentUser = null;
-
-function switchTab(tabName) {
-  tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabName));
-  sections.forEach(section => section.classList.toggle('active', section.id === tabName));
-
-  if (tabName === 'dashboard') {
-    pageTitle.textContent = 'Dashboard';
-    pageDescription.textContent = 'Acompanhe rapidamente o panorama das máquinas da KleCoffee.';
-    return;
-  }
-
-  if (tabName === 'maquinas') {
-    pageTitle.textContent = 'Máquinas';
-    pageDescription.textContent = 'Cadastre, visualize e acompanhe todas as máquinas da operação.';
-    return;
-  }
-
-  pageTitle.textContent = 'Usuários';
-  pageDescription.textContent = 'Crie novos acessos e acompanhe os usuários cadastrados no sistema.';
+// Atualizar cards com dados
+function atualizarCards() {
+    totalMaquinas.textContent = mockData.maquinas.length;
+    totalClientes.textContent = mockData.clientes.length;
+    totalEstoque.textContent = mockData.estoque.length;
+    totalRecebimentos.textContent = 'R$ 1.234,56';
 }
 
-tabs.forEach(button => {
-  button.addEventListener('click', () => switchTab(button.dataset.tab));
-});
-
-function normalizeStatus(status) {
-  if (status === 'Disponível') return 'disponivel';
-  if (status === 'Em uso') return 'emuso';
-  return 'manutencao';
-}
-
-function showLogin() {
-  loginView.style.display = 'grid';
-  appView.style.display = 'none';
-}
-
-function showApp() {
-  loginView.style.display = 'none';
-  appView.style.display = 'block';
-}
-
-function setCurrentUser(usuario) {
-  currentUser = usuario;
-  currentUserName.textContent = usuario?.nome || '-';
-  currentUserRole.textContent = usuario?.perfil || '-';
-
-  const isAdmin = usuario?.perfil === 'Administrador';
-  document.querySelector('[data-tab="usuarios"]').style.display = isAdmin ? 'inline-flex' : 'none';
-  document.getElementById('usuarios').style.display = isAdmin ? '' : 'none';
-
-  if (!isAdmin && document.querySelector('.menu-item.active')?.dataset.tab === 'usuarios') {
-    switchTab('dashboard');
-  }
-}
-
-async function fetchJson(url, options = {}) {
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    },
-    ...options
-  });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Não foi possível concluir a solicitação.');
-  }
-
-  return data;
-}
-
-async function checkApi() {
-  try {
-    const data = await fetchJson('/api/health', { headers: {} });
-    apiStatus.textContent = data.message;
-  } catch (_error) {
-    apiStatus.textContent = 'Falha na conexão com a API';
-  }
-}
-
-async function loadDashboard() {
-  try {
-    const data = await fetchJson('/api/dashboard');
-
-    document.getElementById('totalMaquinas').textContent = data.totalMaquinas;
-    document.getElementById('disponiveis').textContent = data.disponiveis;
-    document.getElementById('emUso').textContent = data.emUso;
-    document.getElementById('manutencao').textContent = data.manutencao;
-    totalUsuarios.textContent = data.totalUsuarios;
-
-    const total = Math.max(data.totalMaquinas, 1);
-    document.getElementById('barDisponiveis').style.width = `${(data.disponiveis / total) * 100}%`;
-    document.getElementById('barEmUso').style.width = `${(data.emUso / total) * 100}%`;
-    document.getElementById('barManutencao').style.width = `${(data.manutencao / total) * 100}%`;
-
-    if (!data.ultimas.length) {
-      ultimasMaquinas.innerHTML = '<div class="empty-state">Nenhuma máquina cadastrada ainda.</div>';
-      return;
+// Renderizar tabela baseada na página atual
+function renderTable(page) {
+    const data = mockData[page] || [];
+    
+    if (data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum registro encontrado</td></tr>';
+        return;
     }
-
-    ultimasMaquinas.innerHTML = data.ultimas.map(item => `
-      <div class="list-item">
-        <h4>${item.nome}</h4>
-        <small>${item.marca} • ${item.modelo}</small>
-        <div style="margin-top:8px;">
-          <span class="badge ${normalizeStatus(item.status_maquina)}">${item.status_maquina}</span>
-        </div>
-      </div>
+    
+    tableBody.innerHTML = data.map(item => `
+        <tr>
+            <td>${item.id}</td>
+            <td>${item.nome}</td>
+            <td>
+                <span class="status-badge ${item.status === 'active' ? 'status-active' : 'status-inactive'}">
+                    ${item.status === 'active' ? 'Ativo' : 'Inativo'}
+                </span>
+            </td>
+            <td>${item.data}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-action edit" onclick="editarRegistro(${item.id})">
+                        <span class="material-icons">edit</span>
+                    </button>
+                    <button class="btn-action delete" onclick="excluirRegistro(${item.id})">
+                        <span class="material-icons">delete</span>
+                    </button>
+                </div>
+            </td>
+        </tr>
     `).join('');
-  } catch (error) {
-    ultimasMaquinas.innerHTML = `<div class="empty-state">${error.message}</div>`;
-  }
 }
 
-async function loadMachines() {
-  try {
-    const data = await fetchJson('/api/maquinas');
-
-    if (!data.length) {
-      machinesTable.innerHTML = '<div class="empty-state">Nenhuma máquina cadastrada no momento.</div>';
-      return;
-    }
-
-    machinesTable.innerHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Marca</th>
-            <th>Modelo</th>
-            <th>Status</th>
-            <th>Localização</th>
-            <th>Patrimônio</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.map(machine => `
-            <tr>
-              <td>${machine.nome}</td>
-              <td>${machine.marca}</td>
-              <td>${machine.modelo}</td>
-              <td><span class="badge ${normalizeStatus(machine.status_maquina)}">${machine.status_maquina}</span></td>
-              <td>${machine.localizacao || '-'}</td>
-              <td>${machine.patrimonio || '-'}</td>
-              <td>
-                <button class="delete-btn" onclick="deleteMachine(${machine.id})">Excluir</button>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+// Trocar de página
+function changePage(page) {
+    // Atualizar título
+    const titles = {
+        maquinas: 'Máquinas',
+        clientes: 'Clientes',
+        eventos: 'Eventos',
+        estoque: 'Estoque',
+        pagamentos: 'Recebimentos',
+        configuracoes: 'Configurações'
+    };
+    
+    pageTitle.textContent = titles[page] || 'Dashboard';
+    
+    // Atualizar menu ativo
+    menuItems.forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.page === page) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Renderizar tabela
+    renderTable(page);
+    
+    // Atualizar texto do botão novo
+    const btnTexts = {
+        maquinas: 'Nova Máquina',
+        clientes: 'Novo Cliente',
+        eventos: 'Novo Evento',
+        estoque: 'Novo Produto',
+        pagamentos: 'Novo Recebimento',
+        configuracoes: 'Nova Configuração'
+    };
+    
+    const btnNovo = document.getElementById('btnNovo');
+    btnNovo.innerHTML = `
+        <span class="material-icons">add</span>
+        ${btnTexts[page] || 'Novo Registro'}
     `;
-  } catch (error) {
-    machinesTable.innerHTML = `<div class="empty-state">${error.message}</div>`;
-  }
 }
 
-async function loadUsers() {
-  if (currentUser?.perfil !== 'Administrador') {
-    usersTable.innerHTML = '<div class="empty-state">Apenas administradores podem visualizar os usuários.</div>';
-    return;
-  }
+// Event listeners para menu
+menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+        const page = item.dataset.page;
+        changePage(page);
+    });
+});
 
-  try {
-    const data = await fetchJson('/api/usuarios');
+// Funções de ação (simuladas)
+window.editarRegistro = function(id) {
+    alert(`Editando registro ${id} - ${pageTitle.textContent}`);
+};
 
-    if (!data.length) {
-      usersTable.innerHTML = '<div class="empty-state">Nenhum usuário cadastrado.</div>';
-      return;
+window.excluirRegistro = function(id) {
+    if (confirm(`Deseja realmente excluir o registro ${id}?`)) {
+        alert(`Registro ${id} excluído com sucesso!`);
     }
+};
 
-    usersTable.innerHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>E-mail</th>
-            <th>Perfil</th>
-            <th>Criado em</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.map(user => `
-            <tr>
-              <td>${user.nome}</td>
-              <td>${user.email}</td>
-              <td><span class="badge neutral-badge">${user.perfil}</span></td>
-              <td>${new Date(user.created_at).toLocaleDateString('pt-BR')}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  } catch (error) {
-    usersTable.innerHTML = `<div class="empty-state">${error.message}</div>`;
-  }
-}
-
-loginForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  loginMessage.textContent = 'Entrando...';
-  loginMessage.className = 'form-message';
-
-  const payload = Object.fromEntries(new FormData(loginForm).entries());
-
-  try {
-    const data = await fetchJson('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-
-    setCurrentUser(data.usuario);
-    showApp();
-    loginForm.reset();
-    await initializeAppData();
-  } catch (error) {
-    loginMessage.textContent = error.message;
-    loginMessage.className = 'form-message error';
-  }
+// Botão novo
+btnNovo.addEventListener('click', () => {
+    const activePage = document.querySelector('.menu-item.active').dataset.page;
+    alert(`Criar novo registro em: ${pageTitle.textContent}`);
 });
 
-logoutButton.addEventListener('click', async () => {
-  try {
-    await fetchJson('/api/auth/logout', { method: 'POST' });
-  } catch (_error) {
-    // ignora e volta para o login mesmo assim
-  }
-
-  currentUser = null;
-  showLogin();
-});
-
-machineForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  machineFormMessage.textContent = 'Salvando...';
-  machineFormMessage.className = 'form-message';
-
-  const payload = Object.fromEntries(new FormData(machineForm).entries());
-
-  try {
-    await fetchJson('/api/maquinas', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-
-    machineForm.reset();
-    machineFormMessage.textContent = 'Máquina cadastrada com sucesso.';
-    machineFormMessage.className = 'form-message success';
-    await Promise.all([loadMachines(), loadDashboard()]);
-  } catch (error) {
-    machineFormMessage.textContent = error.message;
-    machineFormMessage.className = 'form-message error';
-  }
-});
-
-userForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  userFormMessage.textContent = 'Criando usuário...';
-  userFormMessage.className = 'form-message';
-
-  const payload = Object.fromEntries(new FormData(userForm).entries());
-
-  try {
-    await fetchJson('/api/usuarios', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-
-    userForm.reset();
-    userFormMessage.textContent = 'Usuário criado com sucesso.';
-    userFormMessage.className = 'form-message success';
-    await Promise.all([loadUsers(), loadDashboard()]);
-  } catch (error) {
-    userFormMessage.textContent = error.message;
-    userFormMessage.className = 'form-message error';
-  }
-});
-
-async function deleteMachine(id) {
-  if (!confirm('Deseja realmente excluir esta máquina?')) return;
-
-  try {
-    await fetchJson(`/api/maquinas/${id}`, { method: 'DELETE' });
-    await Promise.all([loadMachines(), loadDashboard()]);
-  } catch (error) {
-    alert(error.message);
-  }
+// Testar conexão com o banco
+async function testarConexao() {
+    try {
+        const response = await fetch('/api/test');
+        const data = await response.json();
+        console.log('Conexão com banco:', data.message);
+        if (data.solution === 2) {
+            console.log('Banco de dados funcionando corretamente!');
+        }
+    } catch (error) {
+        console.error('Erro ao conectar com o banco:', error);
+    }
 }
 
-async function initializeAppData() {
-  switchTab('dashboard');
-  await Promise.all([checkApi(), loadDashboard(), loadMachines(), loadUsers()]);
-}
-
-async function bootstrap() {
-  try {
-    const data = await fetchJson('/api/auth/me', { headers: {} });
-    setCurrentUser(data.usuario);
-    showApp();
-    await initializeAppData();
-  } catch (_error) {
-    showLogin();
-  }
-}
-
-window.deleteMachine = deleteMachine;
-bootstrap();
+// Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    atualizarCards();
+    changePage('maquinas'); // Página inicial
+    testarConexao();
+});

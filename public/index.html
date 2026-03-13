@@ -4,971 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KleCoffee System</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f2f5;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Container principal com flex */
-        .app-container {
-            display: flex;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-        }
-
-        /* ===== MENU LATERAL FIXO ===== */
-        .sidebar {
-            width: 260px;
-            background: linear-gradient(180deg, #1a1f2e 0%, #2d3349 100%);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
-            z-index: 1000;
-        }
-
-        .sidebar-header {
-            padding: 24px 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .sidebar-header h2 {
-            font-size: 1.4rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .sidebar-header p {
-            font-size: 0.8rem;
-            color: #94a3b8;
-            margin-top: 4px;
-        }
-
-        .user-info {
-            padding: 16px 20px;
-            background: rgba(255,255,255,0.05);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .user-name {
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .user-role {
-            font-size: 0.75rem;
-            color: #94a3b8;
-            margin-top: 2px;
-        }
-
-        .nav-menu {
-            flex: 1;
-            padding: 20px 12px;
-            overflow-y: auto;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            margin: 4px 0;
-            border-radius: 10px;
-            color: #e2e8f0;
-            text-decoration: none;
-            transition: all 0.2s;
-            cursor: pointer;
-            font-size: 0.95rem;
-        }
-
-        .nav-item:hover {
-            background: rgba(255,255,255,0.1);
-            color: white;
-        }
-
-        .nav-item.active {
-            background: #6366f1;
-            color: white;
-            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
-        }
-
-        .nav-item i {
-            width: 22px;
-            font-size: 1.1rem;
-        }
-
-        .nav-divider {
-            height: 1px;
-            background: rgba(255,255,255,0.1);
-            margin: 16px 0;
-        }
-
-        .nav-section {
-            padding: 8px 16px;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #94a3b8;
-        }
-
-        .logout-btn {
-            margin: 16px 12px;
-            padding: 12px 16px;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 10px;
-            color: #f87171;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-        }
-
-        /* ===== CONTEÚDO PRINCIPAL ===== */
-        .main-content {
-            flex: 1;
-            margin-left: 260px;
-            height: 100vh;
-            overflow-y: auto;
-            background: #f8fafc;
-        }
-
-        .content-header {
-            background: white;
-            padding: 24px 32px;
-            border-bottom: 1px solid #e2e8f0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        }
-
-        .content-header h1 {
-            font-size: 1.8rem;
-            color: #1e293b;
-            font-weight: 600;
-        }
-
-        .content-body {
-            padding: 32px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Cards e componentes */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 24px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-        }
-
-        .stat-title {
-            color: #64748b;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-top: 8px;
-        }
-
-        /* Tabelas */
-        .table-container {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .table-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .table-header h2 {
-            color: #1e293b;
-            font-size: 1.3rem;
-        }
-
-        .btn-primary {
-            background: #6366f1;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary:hover {
-            background: #4f52e0;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            text-align: left;
-            padding: 16px 24px;
-            background: #f8fafc;
-            color: #475569;
-            font-weight: 600;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        td {
-            padding: 16px 24px;
-            border-top: 1px solid #e2e8f0;
-            color: #334155;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .status-disponivel { background: #dcfce7; color: #166534; }
-        .status-uso { background: #dbeafe; color: #1e40af; }
-        .status-manutencao { background: #fee2e2; color: #991b1b; }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-icon {
-            background: none;
-            border: none;
-            padding: 6px;
-            cursor: pointer;
-            border-radius: 6px;
-            color: #64748b;
-            transition: all 0.2s;
-        }
-
-        .btn-icon:hover {
-            background: #f1f5f9;
-            color: #1e293b;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-        }
-
-        .modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            color: #1e293b;
-            font-size: 1.3rem;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #64748b;
-        }
-
-        .modal-body {
-            padding: 24px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            color: #475569;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            transition: all 0.2s;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
-        }
-
-        .modal-footer {
-            padding: 20px 24px;
-            border-top: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-
-        .btn-secondary {
-            background: #f1f5f9;
-            color: #475569;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-
-        .login-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .login-box {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .login-box h2 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
-    <div id="loginContainer" class="login-container">
-        <div class="login-box">
-            <h2>KleCoffee System</h2>
-            <div class="form-group">
-                <label>E-mail</label>
-                <input type="email" id="loginEmail" placeholder="admin@klecoffee.com">
-            </div>
-            <div class="form-group">
-                <label>Senha</label>
-                <input type="password" id="loginSenha" placeholder="123456">
-            </div>
-            <button class="btn-primary" style="width: 100%;" onclick="fazerLogin()">Entrar</button>
+    <!-- Menu Horizontal -->
+    <nav class="menu-horizontal">
+        <div class="logo">
+            <span class="material-icons">coffee</span>
+            <h2>KleCoffee</h2>
         </div>
-    </div>
-
-    <div id="appContainer" class="app-container hidden">
-        <!-- Sidebar Fixa -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>KleCoffee</h2>
-                <p>Sistema de Gestão</p>
-            </div>
-            
-            <div class="user-info" id="userInfo">
-                <div class="user-name">Carregando...</div>
-                <div class="user-role">Perfil</div>
-            </div>
-
-            <nav class="nav-menu">
-                <div class="nav-item active" onclick="mudarPagina('dashboard')">
-                    <i>📊</i> Dashboard
-                </div>
-                <div class="nav-item" onclick="mudarPagina('maquinas')">
-                    <i>⚙️</i> Máquinas
-                </div>
-                <div class="nav-item" onclick="mudarPagina('clientes')">
-                    <i>👥</i> Clientes
-                </div>
-                
-                <div class="nav-divider"></div>
-                <div class="nav-section">Configurações</div>
-                
-                <div class="nav-item" onclick="mudarPagina('usuarios')" id="menuUsuarios">
-                    <i>👤</i> Usuários
-                </div>
-            </nav>
-
-            <div class="logout-btn" onclick="fazerLogout()">
-                <i>🚪</i> Sair
-            </div>
-        </aside>
-
-        <!-- Conteúdo Principal -->
-        <main class="main-content">
-            <div class="content-header">
-                <h1 id="pageTitle">Dashboard</h1>
-            </div>
-            
-            <div class="content-body" id="pageContent">
-                <!-- Conteúdo será carregado aqui -->
-            </div>
-        </main>
-    </div>
-
-    <!-- Modal Cliente -->
-    <div class="modal" id="clienteModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="clienteModalTitle">Novo Cliente</h3>
-                <button class="modal-close" onclick="fecharModal('cliente')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="clienteForm">
-                    <input type="hidden" id="clienteId">
-                    <div class="form-group">
-                        <label>Razão Social *</label>
-                        <input type="text" id="razaoSocial" required>
-                    </div>
-                    <div class="form-group">
-                        <label>CNPJ *</label>
-                        <input type="text" id="cnpj" required placeholder="00.000.000/0000-00">
-                    </div>
-                    <div class="form-group">
-                        <label>Nome do Responsável *</label>
-                        <input type="text" id="responsavelNome" required>
-                    </div>
-                    <div class="form-group">
-                        <label>CPF do Responsável</label>
-                        <input type="text" id="responsavelCpf" placeholder="000.000.000-00">
-                    </div>
-                    <div class="form-group">
-                        <label>Contato *</label>
-                        <input type="text" id="contato" required placeholder="(00) 00000-0000">
-                    </div>
-                    <div class="form-group">
-                        <label>E-mail</label>
-                        <input type="email" id="clienteEmail" placeholder="contato@empresa.com">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="fecharModal('cliente')">Cancelar</button>
-                <button class="btn-primary" onclick="salvarCliente()">Salvar</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let usuarioLogado = null;
-        let currentPage = 'dashboard';
-
-        // Verificar login ao carregar
-        document.addEventListener('DOMContentLoaded', () => {
-            verificarLogin();
-        });
-
-        async function verificarLogin() {
-            try {
-                const response = await fetch('/api/auth/me');
-                if (response.ok) {
-                    const data = await response.json();
-                    usuarioLogado = data.usuario;
-                    mostrarApp();
-                } else {
-                    mostrarLogin();
-                }
-            } catch (error) {
-                mostrarLogin();
-            }
-        }
-
-        function mostrarLogin() {
-            document.getElementById('loginContainer').classList.remove('hidden');
-            document.getElementById('appContainer').classList.add('hidden');
-        }
-
-        function mostrarApp() {
-            document.getElementById('loginContainer').classList.add('hidden');
-            document.getElementById('appContainer').classList.remove('hidden');
-            
-            // Atualizar informações do usuário
-            document.querySelector('.user-name').textContent = usuarioLogado.nome;
-            document.querySelector('.user-role').textContent = usuarioLogado.perfil;
-            
-            // Ocultar menu de usuários se não for admin
-            if (usuarioLogado.perfil !== 'Administrador') {
-                document.getElementById('menuUsuarios').style.display = 'none';
-            }
-            
-            // Carregar página inicial
-            mudarPagina('dashboard');
-        }
-
-        async function fazerLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const senha = document.getElementById('loginSenha').value;
-
-            try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, senha })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    usuarioLogado = data.usuario;
-                    mostrarApp();
-                } else {
-                    alert('E-mail ou senha inválidos');
-                }
-            } catch (error) {
-                alert('Erro ao fazer login');
-            }
-        }
-
-        async function fazerLogout() {
-            await fetch('/api/auth/logout', { method: 'POST' });
-            usuarioLogado = null;
-            mostrarLogin();
-        }
-
-        function mudarPagina(pagina) {
-            currentPage = pagina;
-            
-            // Atualizar título
-            const titles = {
-                dashboard: 'Dashboard',
-                maquinas: 'Máquinas',
-                clientes: 'Clientes',
-                usuarios: 'Usuários'
-            };
-            document.getElementById('pageTitle').textContent = titles[pagina];
-            
-            // Atualizar menu ativo
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            event.target.closest('.nav-item').classList.add('active');
-            
-            // Carregar conteúdo
-            carregarPagina(pagina);
-        }
-
-        async function carregarPagina(pagina) {
-            const content = document.getElementById('pageContent');
-            
-            switch(pagina) {
-                case 'dashboard':
-                    content.innerHTML = await carregarDashboard();
-                    break;
-                case 'maquinas':
-                    content.innerHTML = await carregarMaquinas();
-                    break;
-                case 'clientes':
-                    content.innerHTML = await carregarClientes();
-                    break;
-                case 'usuarios':
-                    if (usuarioLogado.perfil === 'Administrador') {
-                        content.innerHTML = await carregarUsuarios();
-                    }
-                    break;
-            }
-        }
-
-        async function carregarDashboard() {
-            try {
-                const response = await fetch('/api/dashboard');
-                const data = await response.json();
-                
-                return `
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-title">Total de Máquinas</div>
-                            <div class="stat-value">${data.totalMaquinas}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-title">Disponíveis</div>
-                            <div class="stat-value">${data.disponiveis}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-title">Em Uso</div>
-                            <div class="stat-value">${data.emUso}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-title">Em Manutenção</div>
-                            <div class="stat-value">${data.manutencao}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-title">Total de Clientes</div>
-                            <div class="stat-value">${data.totalClientes || 0}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-title">Usuários</div>
-                            <div class="stat-value">${data.totalUsuarios}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="table-container">
-                        <div class="table-header">
-                            <h2>Últimas Máquinas Cadastradas</h2>
-                        </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Modelo</th>
-                                    <th>Marca</th>
-                                    <th>Status</th>
-                                    <th>Localização</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${data.ultimas.map(m => `
-                                    <tr>
-                                        <td>${m.nome}</td>
-                                        <td>${m.modelo}</td>
-                                        <td>${m.marca}</td>
-                                        <td>
-                                            <span class="status-badge status-${m.status_maquina.toLowerCase().replace(' ', '')}">
-                                                ${m.status_maquina}
-                                            </span>
-                                        </td>
-                                        <td>${m.localizacao || '-'}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            } catch (error) {
-                return '<p>Erro ao carregar dashboard</p>';
-            }
-        }
-
-        async function carregarClientes() {
-            try {
-                const response = await fetch('/api/clientes');
-                const clientes = await response.json();
-                
-                return `
-                    <div class="table-container">
-                        <div class="table-header">
-                            <h2>Lista de Clientes</h2>
-                            <button class="btn-primary" onclick="abrirModalCliente()">
-                                <span>+</span> Novo Cliente
-                            </button>
-                        </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Razão Social</th>
-                                    <th>CNPJ</th>
-                                    <th>Responsável</th>
-                                    <th>Contato</th>
-                                    <th>E-mail</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${clientes.map(c => `
-                                    <tr>
-                                        <td>${c.razao_social}</td>
-                                        <td>${c.cnpj}</td>
-                                        <td>${c.responsavel_nome}</td>
-                                        <td>${c.contato}</td>
-                                        <td>${c.email || '-'}</td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="btn-icon" onclick="editarCliente(${c.id})">✏️</button>
-                                                <button class="btn-icon" onclick="excluirCliente(${c.id})">🗑️</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            } catch (error) {
-                return '<p>Erro ao carregar clientes</p>';
-            }
-        }
-
-        async function carregarMaquinas() {
-            try {
-                const response = await fetch('/api/maquinas');
-                const maquinas = await response.json();
-                
-                return `
-                    <div class="table-container">
-                        <div class="table-header">
-                            <h2>Lista de Máquinas</h2>
-                            <button class="btn-primary" onclick="abrirModalMaquina()">
-                                <span>+</span> Nova Máquina
-                            </button>
-                        </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Modelo</th>
-                                    <th>Marca</th>
-                                    <th>Status</th>
-                                    <th>Localização</th>
-                                    <th>Patrimônio</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${maquinas.map(m => `
-                                    <tr>
-                                        <td>${m.nome}</td>
-                                        <td>${m.modelo}</td>
-                                        <td>${m.marca}</td>
-                                        <td>
-                                            <span class="status-badge status-${m.status_maquina.toLowerCase().replace(' ', '')}">
-                                                ${m.status_maquina}
-                                            </span>
-                                        </td>
-                                        <td>${m.localizacao || '-'}</td>
-                                        <td>${m.patrimonio || '-'}</td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="btn-icon" onclick="editarMaquina(${m.id})">✏️</button>
-                                                <button class="btn-icon" onclick="excluirMaquina(${m.id})">🗑️</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            } catch (error) {
-                return '<p>Erro ao carregar máquinas</p>';
-            }
-        }
-
-        async function carregarUsuarios() {
-            try {
-                const response = await fetch('/api/usuarios');
-                const usuarios = await response.json();
-                
-                return `
-                    <div class="table-container">
-                        <div class="table-header">
-                            <h2>Lista de Usuários</h2>
-                            <button class="btn-primary" onclick="abrirModalUsuario()">
-                                <span>+</span> Novo Usuário
-                            </button>
-                        </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>E-mail</th>
-                                    <th>Perfil</th>
-                                    <th>Criado em</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${usuarios.map(u => `
-                                    <tr>
-                                        <td>${u.nome}</td>
-                                        <td>${u.email}</td>
-                                        <td>${u.perfil}</td>
-                                        <td>${new Date(u.created_at).toLocaleDateString()}</td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="btn-icon" onclick="editarUsuario(${u.id})">✏️</button>
-                                                <button class="btn-icon" onclick="excluirUsuario(${u.id})">🗑️</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            } catch (error) {
-                return '<p>Erro ao carregar usuários</p>';
-            }
-        }
-
-        // Funções para Clientes
-        function abrirModalCliente(clienteId = null) {
-            document.getElementById('clienteModalTitle').textContent = clienteId ? 'Editar Cliente' : 'Novo Cliente';
-            document.getElementById('clienteId').value = clienteId || '';
-            
-            if (clienteId) {
-                // Carregar dados do cliente para edição
-                fetch(`/api/clientes/${clienteId}`)
-                    .then(res => res.json())
-                    .then(cliente => {
-                        document.getElementById('razaoSocial').value = cliente.razao_social;
-                        document.getElementById('cnpj').value = cliente.cnpj;
-                        document.getElementById('responsavelNome').value = cliente.responsavel_nome;
-                        document.getElementById('responsavelCpf').value = cliente.responsavel_cpf || '';
-                        document.getElementById('contato').value = cliente.contato;
-                        document.getElementById('clienteEmail').value = cliente.email || '';
-                    });
-            } else {
-                document.getElementById('clienteForm').reset();
-            }
-            
-            document.getElementById('clienteModal').classList.add('active');
-        }
-
-        function fecharModal(modal) {
-            document.getElementById(`${modal}Modal`).classList.remove('active');
-        }
-
-        async function salvarCliente() {
-            const clienteId = document.getElementById('clienteId').value;
-            const dados = {
-                razao_social: document.getElementById('razaoSocial').value,
-                cnpj: document.getElementById('cnpj').value,
-                responsavel_nome: document.getElementById('responsavelNome').value,
-                responsavel_cpf: document.getElementById('responsavelCpf').value,
-                contato: document.getElementById('contato').value,
-                email: document.getElementById('clienteEmail').value
-            };
-
-            try {
-                const url = clienteId ? `/api/clientes/${clienteId}` : '/api/clientes';
-                const method = clienteId ? 'PUT' : 'POST';
-                
-                const response = await fetch(url, {
-                    method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
-                });
-
-                if (response.ok) {
-                    fecharModal('cliente');
-                    carregarPagina('clientes');
-                } else {
-                    alert('Erro ao salvar cliente');
-                }
-            } catch (error) {
-                alert('Erro ao salvar cliente');
-            }
-        }
-
-        async function excluirCliente(id) {
-            if (confirm('Tem certeza que deseja excluir este cliente?')) {
-                try {
-                    const response = await fetch(`/api/clientes/${id}`, { method: 'DELETE' });
-                    if (response.ok) {
-                        carregarPagina('clientes');
-                    } else {
-                        alert('Erro ao excluir cliente');
-                    }
-                } catch (error) {
-                    alert('Erro ao excluir cliente');
-                }
-            }
-        }
-
-        // Funções placeholder para outros CRUDs
-        function abrirModalMaquina() { alert('Implementar cadastro de máquina'); }
-        function editarMaquina(id) { alert('Editar máquina ' + id); }
-        function excluirMaquina(id) { alert('Excluir máquina ' + id); }
         
-        function abrirModalUsuario() { alert('Implementar cadastro de usuário'); }
-        function editarUsuario(id) { alert('Editar usuário ' + id); }
-        function excluirUsuario(id) { alert('Excluir usuário ' + id); }
-    </script>
+        <ul class="menu-items">
+            <li class="menu-item active" data-page="maquinas">
+                <span class="material-icons">precision_manufacturing</span>
+                <span>Máquinas</span>
+            </li>
+            <li class="menu-item" data-page="clientes">
+                <span class="material-icons">people</span>
+                <span>Clientes</span>
+            </li>
+            <li class="menu-item" data-page="eventos">
+                <span class="material-icons">event</span>
+                <span>Eventos</span>
+            </li>
+            <li class="menu-item" data-page="estoque">
+                <span class="material-icons">inventory</span>
+                <span>Estoque</span>
+            </li>
+            <li class="menu-item" data-page="pagamentos">
+                <span class="material-icons">payments</span>
+                <span>Recebimentos</span>
+            </li>
+            <li class="menu-item" data-page="configuracoes">
+                <span class="material-icons">settings</span>
+                <span>Configurações</span>
+            </li>
+        </ul>
+        
+        <div class="user-info">
+            <span class="material-icons">account_circle</span>
+            <span>Admin</span>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+        <!-- Cabeçalho da Página -->
+        <div class="page-header">
+            <h1 id="page-title">Dashboard</h1>
+            <button class="btn-novo" id="btnNovo">
+                <span class="material-icons">add</span>
+                Novo Registro
+            </button>
+        </div>
+
+        <!-- Cards de Resumo -->
+        <div class="cards-container">
+            <div class="card">
+                <div class="card-icon blue">
+                    <span class="material-icons">precision_manufacturing</span>
+                </div>
+                <div class="card-info">
+                    <h3>Máquinas Ativas</h3>
+                    <p class="card-value" id="totalMaquinas">0</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-icon green">
+                    <span class="material-icons">people</span>
+                </div>
+                <div class="card-info">
+                    <h3>Clientes</h3>
+                    <p class="card-value" id="totalClientes">0</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-icon orange">
+                    <span class="material-icons">inventory</span>
+                </div>
+                <div class="card-info">
+                    <h3>Produtos em Estoque</h3>
+                    <p class="card-value" id="totalEstoque">0</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-icon purple">
+                    <span class="material-icons">payments</span>
+                </div>
+                <div class="card-info">
+                    <h3>Recebimentos Hoje</h3>
+                    <p class="card-value" id="totalRecebimentos">R$ 0,00</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Dados -->
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Dados serão inseridos via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
 </body>
 </html>
