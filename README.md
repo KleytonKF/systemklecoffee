@@ -1,57 +1,23 @@
-# Sistema KleCoffee
+# KleCoffee com MySQL para EasyPanel
 
-Sistema simples e bonito para a KleCoffee com:
+Este pacote mantém a interface do sistema e troca o armazenamento local por MySQL via Node.js + Express.
 
-- Dashboard
-- Cadastro de máquinas de café
-- Listagem das máquinas cadastradas
-- Integração com MySQL via Easypanel
+## Estrutura
+- `backend/public/` → frontend (HTML, CSS, JS e pasta `img`)
+- `backend/server.js` → servidor + API + arquivos estáticos
+- `backend/db.js` → conexão MySQL
+- `backend/schema.sql` → estrutura do banco + dados iniciais
+- `backend/.env` → variáveis com a conexão fornecida
 
-## 1) Instalação
+## Como subir no EasyPanel
+1. Suba a pasta `backend` como app Node.js.
+2. Comando de start: `npm start`
+3. Porta: `3000`
+4. As variáveis já estão no arquivo `.env`, mas você também pode cadastrar no painel.
+5. Importe o arquivo `schema.sql` no banco `klecoffeesystem_db`.
 
-```bash
-npm install
-```
-
-## 2) Configuração do banco
-
-Crie um arquivo `.env` na raiz do projeto com base no `.env.example`.
-
-Exemplo:
-
-```env
-PORT=3000
-DB_HOST=sistema_klecoffee_klecoffeesystem_db
-DB_PORT=3306
-DB_USER=Kletrotsk
-DB_PASSWORD=Bosite32*
-DB_NAME=klecoffeesystem_db
-```
-
-## 3) Rodar o sistema
-
-```bash
-npm start
-```
-
-## 4) Estrutura criada automaticamente
-
-Ao iniciar, o sistema cria a tabela abaixo caso ela não exista:
-
-```sql
-CREATE TABLE maquinas (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(120) NOT NULL,
-  modelo VARCHAR(120) NOT NULL,
-  marca VARCHAR(120) NOT NULL,
-  status_maquina ENUM('Disponível', 'Em uso', 'Manutenção') NOT NULL DEFAULT 'Disponível',
-  localizacao VARCHAR(150) DEFAULT NULL,
-  patrimonio VARCHAR(80) DEFAULT NULL,
-  observacoes TEXT DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-## 5) Observação
-
-No Easypanel, normalmente o `DB_HOST` interno é o nome interno do serviço do banco.
+## Observações
+- O front agora salva e lê do MySQL pela API.
+- A estética foi preservada na medida do possível.
+- O acesso continua em `usuario/senha` da tabela `usuarios`.
+- A logo continua em `backend/public/img/logo-klecoffee.png`.
