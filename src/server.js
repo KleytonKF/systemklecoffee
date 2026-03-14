@@ -15,7 +15,8 @@ const __dirname = path.dirname(__filename);
 const publicDir = path.join(__dirname, '..', 'public');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT || 3000);
+const HOST = process.env.HOST || '0.0.0.0';
 
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -155,6 +156,10 @@ async function dashboardData() {
     ultimosPagamentos: recentPayments
   };
 }
+
+app.get('/health', (_req, res) => {
+  res.status(200).json({ ok: true, service: 'klecoffee', uptime: process.uptime() });
+});
 
 app.get('/api/logo-status', (_req, res) => {
   const logoPath = path.join(publicDir, 'img', 'logo-klecoffee.png');
@@ -414,6 +419,24 @@ app.get('/api/dashboard', requireAuth, async (_req, res) => {
 
 app.get('*', (_req, res) => res.sendFile(path.join(publicDir, 'index.html')));
 
-app.listen(PORT, () => {
-  console.log(`KleCoffee rodando na porta ${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`KleCoffee rodando em http://${HOST}:${PORT}`);
+});
+
+server.on('error', (error) => {
+  console.error('Erro ao iniciar servidor:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled rejection:', error);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+});
+
+process.on('SIGTERM', () => {
+  console.log('Recebido SIGTERM. Encerrando aplicação...');
+  server.close(() => process.exit(0));
 });

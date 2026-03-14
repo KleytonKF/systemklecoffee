@@ -61,3 +61,14 @@ Coloque a logo em:
 - `public/img/logo-klecoffee.png`
 
 Se o arquivo existir, ele aparece automaticamente no menu.
+
+
+## Ajuste importante da senha no MYSQL_URL
+
+Sua senha tem `*`. Para evitar erro de parsing na URL, use a versão codificada abaixo no EasyPanel:
+
+```
+MYSQL_URL=mysql://Kletrotsk:Bosite32%2A@sistema_klecoffee_klecoffeesystem_db:3306/klecoffeesystem_db
+```
+
+Também deixei a aplicação ouvindo em `0.0.0.0` e com rota `/health`, o que ajuda em deploy no EasyPanel.
