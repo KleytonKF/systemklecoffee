@@ -1,19 +1,11 @@
 {
   "version": "1",
+  "language": "node",
   "build": {
     "command": "cd backend && npm install",
-    "environment": {
-      "NODE_ENV": "production"
-    }
+    "context": "./backend"
   },
   "start": {
     "command": "cd backend && npm start"
-  },
-  "language": "node",
-  "node": {
-    "version": "18",
-    "packageManager": "npm",
-    "buildCommand": "cd backend && npm install",
-    "startCommand": "cd backend && npm start"
   }
 }
