@@ -13,15 +13,19 @@
 </head>
 <body>
   <div id="loginPage" class="login-page">
-    <div class="login-container minimal">
+    <div class="login-shell">
+      <div class="login-brand">
+        <img src="/img/logo-klecoffee.png" alt="KleCoffee" class="login-logo">
+      </div>
+      <div class="login-container minimal">
       <div class="login-form">
         <div class="form-group">
           <label>Usuário</label>
-          <div class="input-group"><i class="fas fa-user"></i><input type="text" id="loginUsername" placeholder="Digite seu usuário"></div>
+          <div class="input-group"><span class="field-icon"><i class="fas fa-user"></i></span><input type="text" id="loginUsername" placeholder="Digite seu usuário"></div>
         </div>
         <div class="form-group">
           <label>Senha</label>
-          <div class="input-group"><i class="fas fa-lock"></i><input type="password" id="loginPassword" placeholder="Digite sua senha"></div>
+          <div class="input-group"><span class="field-icon"><i class="fas fa-lock"></i></span><input type="password" id="loginPassword" placeholder="Digite sua senha"></div>
         </div>
         <div class="login-options">
           <label class="remember-me"><input type="checkbox" id="rememberMe"> Lembrar-me</label>
@@ -29,6 +33,7 @@
         <button class="login-button" id="loginButton"><i class="fas fa-sign-in-alt"></i> Entrar</button>
         <div id="loginError" class="login-error"></div>
       </div>
+    </div>
     </div>
   </div>
 
