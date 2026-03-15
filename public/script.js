@@ -121,7 +121,7 @@ function calcularMargem() {
 
 function atualizarSelects() {
   const maqHtml = state.maquinas.map(m => `
-    <div class="multi-select-item">
+    <div class="multi-select-item" data-selectable>
       <input type="checkbox" name="clienteMaquinas" value="${m.id}" id="cli-maq-${m.id}">
       <label for="cli-maq-${m.id}">${m.marca} ${m.modelo}</label>
     </div>`).join('');
@@ -133,13 +133,13 @@ function atualizarSelects() {
   $('#produtoVenda').innerHTML = '<option value="">Selecione...</option>' + state.produtos.map(p => `<option value="${p.id}" data-preco="${p.valorVenda}" data-estoque="${p.quantidade}">${p.nome} (Estoque: ${p.quantidade})</option>`).join('');
 
   $('#eventoMaquinasContainer').innerHTML = state.maquinas.map(m => `
-    <div class="multi-select-item">
+    <div class="multi-select-item" data-selectable>
       <input type="checkbox" name="eventoMaquinas" value="${m.id}" id="evt-maq-${m.id}" data-valor="${m.valor}">
       <label for="evt-maq-${m.id}">${m.marca} ${m.modelo} - ${moeda(m.valor)}</label>
     </div>`).join('');
 
   $('#insumosContainer').innerHTML = state.produtos.map(p => `
-    <div class="insumo-item">
+    <div class="insumo-item" data-selectable>
       <div style="flex:1">
         <strong>${p.nome}</strong><br>
         <small>${moeda(p.valorVenda)} | Estoque: ${p.quantidade}</small>
@@ -149,11 +149,30 @@ function atualizarSelects() {
 
   $$('input[name="eventoMaquinas"], .insumo-qtd').forEach(el => el.addEventListener('input', calcularResumoEvento));
   $$('input[name="eventoMaquinas"]').forEach(el => el.addEventListener('change', calcularResumoEvento));
+  $$('[data-selectable]').forEach(row => {
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    const qty = row.querySelector('.insumo-qtd');
+    if (checkbox) {
+      checkbox.addEventListener('change', () => row.classList.toggle('selected', checkbox.checked));
+      row.classList.toggle('selected', checkbox.checked);
+    }
+    if (qty) {
+      const syncQty = () => row.classList.toggle('selected', Number(qty.value || 0) > 0);
+      qty.addEventListener('input', syncQty);
+      syncQty();
+    }
+  });
 }
 
 function calcularResumoEvento() {
   const valorMaquinas = $$('input[name="eventoMaquinas"]:checked').reduce((t, cb) => t + Number(cb.dataset.valor || 0), 0);
   const valorInsumos = $$('.insumo-qtd').reduce((t, input) => t + (Number(input.value || 0) * Number(input.dataset.preco || 0)), 0);
+  $$('[data-selectable]').forEach(row => {
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    const qty = row.querySelector('.insumo-qtd');
+    if (checkbox) row.classList.toggle('selected', checkbox.checked);
+    if (qty) row.classList.toggle('selected', Number(qty.value || 0) > 0);
+  });
   $('#resumoMaquinas').textContent = moeda(valorMaquinas);
   $('#resumoInsumos').textContent = moeda(valorInsumos);
   $('#resumoTotal').textContent = moeda(valorMaquinas + valorInsumos);
@@ -218,13 +237,20 @@ function createOrUpdateChart(id, type, data, extraOptions = {}) {
   const ctx = document.getElementById(id);
   if (!ctx) return;
   if (state.charts[id]) state.charts[id].destroy();
+  const safeData = { ...data };
+  if (!safeData.labels || !safeData.labels.length) {
+    safeData.labels = ['Sem dados'];
+    safeData.datasets = (safeData.datasets || []).map(ds => ({ ...ds, data: [0] }));
+  }
   state.charts[id] = new Chart(ctx, {
     type,
-    data,
+    data: safeData,
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: type === 'doughnut' ? {} : { y: { beginAtZero: true } },
+      animation: { duration: 500 },
+      plugins: { legend: { labels: { usePointStyle: true, boxWidth: 10 } }, tooltip: { padding: 10 }, ...(extraOptions.plugins || {}) },
+      scales: type === 'doughnut' ? {} : { y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,.12)' }, ticks: { precision: 0 } }, x: { grid: { display: false } } },
       ...extraOptions
     }
   });
